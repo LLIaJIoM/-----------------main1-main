@@ -26,6 +26,16 @@ except Exception:
 def esc(s):
     return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
+def normalize_phone(raw):
+    digits = "".join(ch for ch in (raw or "") if ch.isdigit())
+    if not digits:
+        return None
+    if digits[0] == "8":
+        digits = "7" + digits[1:]
+    if len(digits) == 11 and digits[0] == "7":
+        return "+" + digits
+    return None
+
 class Handler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
         full = super().translate_path(path)
@@ -48,11 +58,18 @@ class Handler(SimpleHTTPRequestHandler):
         phone = str(data.get("phone", "")).strip()
         comment = str(data.get("comment", "")).strip()
         page = str(data.get("page", "")).strip()
+        phone_norm = normalize_phone(phone)
         if not name or not phone:
             self.send_response(400)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(json.dumps({"ok": False, "error": "missing_fields"}).encode("utf-8"))
+            return
+        if not phone_norm:
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": False, "error": "invalid_phone"}).encode("utf-8"))
             return
         ok = False
         err = None
@@ -62,7 +79,7 @@ class Handler(SimpleHTTPRequestHandler):
                 text = (
                     f"<b>Новая заявка</b>\n"
                     f"Имя: {esc(name)}\n"
-                    f"Телефон: {esc(phone)}\n"
+                    f"Телефон: {esc(phone_norm)}\n"
                     f"Комментарий: {esc(comment)}\n"
                     f"Источник: Сайт\n"
                     f"Время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
@@ -99,7 +116,7 @@ class Handler(SimpleHTTPRequestHandler):
             try:
                 rec = {
                     "name": name,
-                    "phone": phone,
+                    "phone": phone_norm,
                     "comment": comment,
                     "page": page,
                     "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S')

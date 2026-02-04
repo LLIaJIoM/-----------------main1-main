@@ -43,7 +43,7 @@ class ServerTestCase(unittest.TestCase):
     def test_env_missing_falls_back_to_local_store(self):
         server.BOT_TOKEN = None
         server.CHAT_ID = None
-        resp = self._post({"name": "Alice", "phone": "+10000000000"})
+        resp = self._post({"name": "Alice", "phone": "+79990000000"})
         data = resp.read()
         self.assertEqual(resp.status, 200)
         obj = json.loads(data.decode("utf-8"))
@@ -64,9 +64,19 @@ class ServerTestCase(unittest.TestCase):
                     return b'{"ok": true, "result": {}}'
             return R()
         with patch("server.urllib.request.urlopen", fake_urlopen):
-            resp = self._post({"name": "Bob", "phone": "+10000000001", "comment": "c", "page": "/p"})
+            resp = self._post({"name": "Bob", "phone": "+79990000001", "comment": "c", "page": "/p"})
             data = resp.read()
             self.assertEqual(resp.status, 200)
             obj = json.loads(data.decode("utf-8"))
             self.assertTrue(obj["ok"])
             self.assertIsNone(obj["error"])
+
+    def test_invalid_phone_returns_400(self):
+        server.BOT_TOKEN = None
+        server.CHAT_ID = None
+        resp = self._post({"name": "Bad", "phone": "123"})
+        data = resp.read()
+        self.assertEqual(resp.status, 400)
+        obj = json.loads(data.decode("utf-8"))
+        self.assertFalse(obj["ok"])
+        self.assertEqual(obj["error"], "invalid_phone")

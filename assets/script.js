@@ -139,17 +139,51 @@ document.addEventListener('DOMContentLoaded', () => {
   const msg = document.getElementById('form-msg');
   const phoneInput = document.getElementById('phone');
 
+  const normalizePhone = raw => {
+    const digits = (raw || '').replace(/\D+/g, '');
+    let d = digits;
+    if (!d) return null;
+    if (d.startsWith('8')) d = '7' + d.slice(1);
+    if (d[0] !== '7') d = '7' + d.slice(0, 10);
+    if (d.length > 11) d = d.slice(0, 11);
+    if (d.length === 11 && d[0] === '7') return '+' + d;
+    return null;
+  };
+  const formatMask = raw => {
+    const digits = (raw || '').replace(/\D+/g, '');
+    let d = digits;
+    if (!d) return '';
+    if (d.startsWith('8')) d = '7' + d.slice(1);
+    if (d[0] !== '7') d = '7' + d;
+    if (d.length > 11) d = d.slice(0, 11);
+    const a = d.slice(1, 4);
+    const b = d.slice(4, 7);
+    const c = d.slice(7, 9);
+    const e = d.slice(9, 11);
+    let out = '+7';
+    if (a) out += ' (' + a;
+    if (a && a.length === 3) out += ')';
+    if (b) out += ' ' + b;
+    if (c) out += '-' + c;
+    if (e) out += '-' + e;
+    return out;
+  };
   phoneInput.addEventListener('input', () => {
-    const v = phoneInput.value.replace(/[^\d+()-\s]/g, '');
-    phoneInput.value = v;
+    phoneInput.value = formatMask(phoneInput.value);
   });
 
   form.addEventListener('submit', e => {
     e.preventDefault();
     const name = form.name.value.trim();
     const phone = form.phone.value.trim();
+    const normalized = normalizePhone(phone);
     if (!name || !phone) {
       msg.textContent = 'Заполните имя и телефон.';
+      msg.style.color = 'crimson';
+      return;
+    }
+    if (!normalized) {
+      msg.textContent = 'Введите номер в формате +7 (XXX) XXX-XX-XX.';
       msg.style.color = 'crimson';
       return;
     }
@@ -159,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     msg.style.color = 'inherit';
     const payload = {
       name,
-      phone,
+      phone: normalized,
       comment: form.comment.value.trim(),
       page: location.href
     };
