@@ -274,32 +274,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const applyMask = () => {
       const data = iti.getSelectedCountryData() || {};
-      if (data.dialCode !== '7' || data.iso2 !== 'ru') return;
-      let raw = phoneInput.value.replace(/\D/g, '');
-      if (!raw) {
-        phoneInput.value = '';
-        return;
-      }
-      if (raw[0] === '8' || raw[0] === '7') {
-        raw = raw.slice(1);
-      }
-      const mask = "(999) 999-99-99";
-      let res = "";
-      let di = 0;
-      for (let i = 0; i < mask.length; i++) {
-        const ch = mask[i];
-        if (ch === '9') {
-          if (di < raw.length) {
-            res += raw[di++];
+      
+      // Russia: Custom mask
+      if (data.dialCode === '7' && data.iso2 === 'ru') {
+        let raw = phoneInput.value.replace(/\D/g, '');
+        if (!raw) {
+          phoneInput.value = '';
+          return;
+        }
+        if (raw[0] === '8' || raw[0] === '7') {
+          raw = raw.slice(1);
+        }
+        const mask = "(999) 999-99-99";
+        let res = "";
+        let di = 0;
+        for (let i = 0; i < mask.length; i++) {
+          const ch = mask[i];
+          if (ch === '9') {
+            if (di < raw.length) {
+              res += raw[di++];
+            } else {
+              break;
+            }
           } else {
-            break;
+            if (!di && (ch === ' ' || ch === '-')) continue;
+            res += ch;
           }
-        } else {
-          if (!di && (ch === ' ' || ch === '-')) continue;
-          res += ch;
+        }
+        phoneInput.value = res;
+      } else {
+        // Other countries: Limit total digits to 15 (E.164 standard)
+        // input value is national part, so max = 15 - dialCode length
+        const dialCodeLen = data.dialCode ? data.dialCode.length : 0;
+        const maxNationalDigits = 15 - dialCodeLen;
+        
+        let val = phoneInput.value;
+        // Keep trimming last char if digits exceed max
+        while (val.replace(/\D/g, '').length > maxNationalDigits) {
+          val = val.slice(0, -1);
+        }
+        if (phoneInput.value !== val) {
+          phoneInput.value = val;
         }
       }
-      phoneInput.value = res;
     };
 
     phoneInput.addEventListener('input', applyMask);
