@@ -138,6 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('feedback-form');
   const msg = document.getElementById('form-msg');
   const phoneInput = document.getElementById('phone');
+  const nameInput = document.getElementById('name');
+  const commentInput = document.getElementById('comment');
 
   const normalizePhone = raw => {
     const digits = (raw || '').replace(/\D+/g, '');
@@ -171,12 +173,70 @@ document.addEventListener('DOMContentLoaded', () => {
   phoneInput.addEventListener('input', () => {
     phoneInput.value = formatMask(phoneInput.value);
   });
+  phoneInput.addEventListener('invalid', () => {
+    phoneInput.setCustomValidity('Введите номер телефона в формате +7 (XXX) XXX-XX-XX.');
+    msg.textContent = 'Введите номер телефона в формате +7 (XXX) XXX-XX-XX.';
+    msg.style.color = 'crimson';
+  });
+  phoneInput.addEventListener('input', () => {
+    phoneInput.setCustomValidity('');
+  });
+  nameInput.addEventListener('invalid', () => {
+    const v = nameInput.value.trim();
+    let m = '';
+    if (!v) m = 'Введите имя.';
+    else if (v.length > 50) m = 'Имя слишком длинное (макс. 50 символов).';
+    else m = 'Введите ваше имя.';
+    nameInput.setCustomValidity(m);
+    msg.textContent = m;
+    msg.style.color = 'crimson';
+  });
+  nameInput.addEventListener('input', () => {
+    nameInput.setCustomValidity('');
+  });
+  commentInput.addEventListener('invalid', () => {
+    const v = commentInput.value.trim();
+    let m = '';
+    if (v.length > 1000) m = 'Комментарий слишком длинный (макс. 1000 символов).';
+    else m = 'Можно написать до 1000 символов.';
+    commentInput.setCustomValidity(m);
+    msg.textContent = m;
+    msg.style.color = 'crimson';
+  });
+  commentInput.addEventListener('input', () => {
+    commentInput.setCustomValidity('');
+    const v = commentInput.value;
+    if (v.length >= 1000) {
+      msg.textContent = 'Превышен допустимый лимит: больше 1000 символов нельзя.';
+      msg.style.color = 'crimson';
+    } else {
+      if (msg.textContent.startsWith('Комментарий')) msg.textContent = '';
+    }
+  });
+  commentInput.addEventListener('beforeinput', e => {
+    const inserting = e.inputType && e.inputType.startsWith('insert');
+    if (inserting && commentInput.value.length >= 1000) {
+      msg.textContent = 'Превышен допустимый лимит: больше 1000 символов нельзя.';
+      msg.style.color = 'crimson';
+    }
+  });
 
   form.addEventListener('submit', e => {
     e.preventDefault();
     const name = form.name.value.trim();
     const phone = form.phone.value.trim();
     const normalized = normalizePhone(phone);
+    if (name.length > 50) {
+      msg.textContent = 'Имя слишком длинное (макс. 50 символов).';
+      msg.style.color = 'crimson';
+      return;
+    }
+    const commentVal = form.comment.value.trim();
+    if (commentVal.length > 1000) {
+      msg.textContent = 'Комментарий слишком длинный (макс. 1000 символов).';
+      msg.style.color = 'crimson';
+      return;
+    }
     if (!name || !phone) {
       msg.textContent = 'Заполните имя и телефон.';
       msg.style.color = 'crimson';
@@ -194,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const payload = {
       name,
       phone: normalized,
-      comment: form.comment.value.trim(),
+      comment: commentVal,
       page: location.href
     };
     fetch('/api/telegram', {

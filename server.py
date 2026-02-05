@@ -65,6 +65,18 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"ok": False, "error": "missing_fields"}).encode("utf-8"))
             return
+        if len(name) > 50:
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": False, "error": "name_too_long"}).encode("utf-8"))
+            return
+        if len(comment) > 1000:
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": False, "error": "comment_too_long"}).encode("utf-8"))
+            return
         if not phone_norm:
             self.send_response(400)
             self.send_header("Content-Type", "application/json; charset=utf-8")
