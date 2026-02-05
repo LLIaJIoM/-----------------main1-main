@@ -1,5 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+  let isLite = false;
+  try {
+    const qs = new URLSearchParams(location.search);
+    isLite = qs.get('lite') === '1';
+  } catch (e) {}
+
   const navToggle = document.querySelector('.nav-toggle');
   const nav = document.querySelector('.nav');
   if (navToggle && nav) {
@@ -22,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const heroEl = document.querySelector('.wide-image');
-  if (heroEl) {
+  if (heroEl && !isLite) {
     const test = new Image();
     test.onload = () => {
       heroEl.style.background = 'none';
@@ -50,9 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const track = document.querySelector('.carousel-track');
   const btnPrev = document.querySelector('.carousel-btn.prev');
   const btnNext = document.querySelector('.carousel-btn.next');
-  if (track && btnPrev && btnNext) {
-    const exts = ['jpg','jpeg','png','webp'];
-    const max = 200;
+  if (track && btnPrev && btnNext && !isLite) {
     const sources = [];
     const lightbox = document.createElement('div');
     lightbox.className = 'lightbox';
@@ -76,84 +80,171 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') closeLightbox();
     });
-    const probe = src => new Promise(res => {
-      const img = new Image();
-      img.onload = () => res(true);
-      img.onerror = () => res(false);
-      img.src = src;
+    const allPhotos = [
+      "assets/portfolio/photo_10_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_10_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_11_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_11_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_12_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_12_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_13_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_13_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_14_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_14_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_15_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_15_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_16_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_16_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_17_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_17_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_18_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_18_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_19_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_19_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_1_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_1_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_20_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_20_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_21_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_21_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_22_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_22_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_23_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_23_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_24_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_24_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_25_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_25_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_26_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_26_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_27_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_27_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_28_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_28_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_29_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_2_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_2_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_30_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_30_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_31_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_31_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_32_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_32_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_33_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_33_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_34_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_34_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_35_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_35_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_36_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_37_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_38_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_39_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_3_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_3_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_40_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_41_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_42_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_43_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_44_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_45_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_46_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_47_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_48_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_49_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_4_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_4_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_50_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_51_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_52_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_53_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_54_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_55_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_56_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_57_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_58_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_59_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_5_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_5_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_60_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_61_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_62_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_63_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_64_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_65_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_66_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_67_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_68_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_69_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_6_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_6_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_70_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_71_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_72_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_73_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_74_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_75_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_76_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_7_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_7_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_8_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_8_2026-02-04_20-15-16.jpg",
+      "assets/portfolio/photo_9_2026-02-04_20-03-53.jpg",
+      "assets/portfolio/photo_9_2026-02-04_20-15-16.jpg"
+    ];
+    const maxPhotos = 12;
+    const list = allPhotos.slice(0, maxPhotos);
+    if (!list.length) return;
+    list.forEach(src => sources.push(src));
+    const repeated = sources.concat(sources).concat(sources);
+    repeated.forEach(src => {
+      const slide = document.createElement('div');
+      slide.className = 'carousel-slide';
+      slide.style.backgroundImage = `url('${src}')`;
+      slide.addEventListener('click', () => openLightbox(src));
+      track.appendChild(slide);
     });
-    (async () => {
-      let list = [];
-      try {
-        const r = await fetch('assets/portfolio/index.json', { cache: 'no-store' });
-        if (r.ok) {
-          const arr = await r.json();
-          if (Array.isArray(arr) && arr.length) list = arr.map(n => `assets/portfolio/${n}`);
-        }
-      } catch {}
-      if (!list.length) {
-        for (let i = 1; i <= max; i++) {
-          let found = false;
-          for (const ext of exts) {
-            const src = `assets/portfolio/${i}.${ext}`;
-            if (await probe(src)) { list.push(src); found = true; break; }
-          }
-          if (!found) continue;
-        }
-      }
-      if (!list.length) return;
-      list.forEach(src => sources.push(src));
-      const repeated = sources.concat(sources).concat(sources);
-      repeated.forEach(src => {
-        const slide = document.createElement('div');
-        slide.className = 'carousel-slide';
-        slide.style.backgroundImage = `url('${src}')`;
-        slide.addEventListener('click', () => openLightbox(src));
-        track.appendChild(slide);
-      });
-      let index = sources.length + Math.floor(Math.random() * sources.length);
-      const update = () => {
+    let index = sources.length + Math.floor(Math.random() * sources.length);
+    const update = () => {
+      track.style.transform = `translateX(-${index * 100}%)`;
+    };
+    const fixLoop = () => {
+      const block = sources.length;
+      if (index >= block * 2) {
+        index -= block;
+        const prev = track.style.transition;
+        track.style.transition = 'none';
         track.style.transform = `translateX(-${index * 100}%)`;
-      };
-      const fixLoop = () => {
-        const block = sources.length;
-        if (index >= block * 2) {
-          index -= block;
-          const prev = track.style.transition;
-          track.style.transition = 'none';
-          track.style.transform = `translateX(-${index * 100}%)`;
-          // force reflow
-          void track.offsetHeight;
-          track.style.transition = prev || 'transform .45s ease';
-        } else if (index < block) {
-          index += block;
-          const prev = track.style.transition;
-          track.style.transition = 'none';
-          track.style.transform = `translateX(-${index * 100}%)`;
-          void track.offsetHeight;
-          track.style.transition = prev || 'transform .45s ease';
-        }
-      };
-      track.addEventListener('transitionend', fixLoop);
-      btnPrev.addEventListener('click', () => {
-        index -= 1;
-        update();
-      });
-      btnNext.addEventListener('click', () => {
-        index += 1;
-        update();
-      });
-      window.addEventListener('resize', update);
-      let sx = 0, dx = 0;
-      track.addEventListener('touchstart', e => { sx = e.touches[0].clientX; dx = 0; }, { passive: true });
-      track.addEventListener('touchmove', e => { dx = e.touches[0].clientX - sx; }, { passive: true });
-      track.addEventListener('touchend', () => {
-        if (Math.abs(dx) > 40) {
-          if (dx < 0) btnNext.click(); else btnPrev.click();
-        }
-      });
+        void track.offsetHeight;
+        track.style.transition = prev || 'transform .45s ease';
+      } else if (index < block) {
+        index += block;
+        const prev = track.style.transition;
+        track.style.transition = 'none';
+        track.style.transform = `translateX(-${index * 100}%)`;
+        void track.offsetHeight;
+        track.style.transition = prev || 'transform .45s ease';
+      }
+    };
+    track.addEventListener('transitionend', fixLoop);
+    btnPrev.addEventListener('click', () => {
+      index -= 1;
       update();
-    })();
+    });
+    btnNext.addEventListener('click', () => {
+      index += 1;
+      update();
+    });
+    window.addEventListener('resize', update);
+    let sx = 0, dx = 0;
+    track.addEventListener('touchstart', e => { sx = e.touches[0].clientX; dx = 0; }, { passive: true });
+    track.addEventListener('touchmove', e => { dx = e.touches[0].clientX - sx; }, { passive: true });
+    track.addEventListener('touchend', () => {
+      if (Math.abs(dx) > 40) {
+        if (dx < 0) btnNext.click(); else btnPrev.click();
+      }
+    });
+    update();
   }
 
   const form = document.getElementById('feedback-form');
@@ -165,96 +256,60 @@ document.addEventListener('DOMContentLoaded', () => {
   // Disable default HTML5 validation to control the order and UI manually
   if (form) form.setAttribute('novalidate', 'true');
 
-  // Initialize Intl Tel Input
+  // Initialize Intl Tel Input с кастомным плейсхолдером и маской для РФ (кроме lite-режима)
   let iti = null;
-  if (window.intlTelInput && phoneInput) {
+  if (!isLite && window.intlTelInput && phoneInput) {
     iti = window.intlTelInput(phoneInput, {
       initialCountry: "ru",
       separateDialCode: true,
-      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/utils.js",
       autoPlaceholder: "aggressive",
-      customPlaceholder: function(selectedCountryPlaceholder, selectedCountryData) {
-          // Force bracketed format for RU to ensure it starts with brackets immediately
-          if (selectedCountryData.iso2 === 'ru') {
-              return "(999) 999-99-99";
-          }
-          return selectedCountryPlaceholder;
+      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/utils.js",
+      customPlaceholder: function (placeholder, data) {
+        if (data && data.iso2 === 'ru') {
+          return "(999) 999-99-99";
+        }
+        return placeholder;
       }
     });
 
-    // Helper to format number based on placeholder
     const applyMask = () => {
-      // Get current value and placeholder
-      let val = phoneInput.value;
-      const placeholder = phoneInput.getAttribute('placeholder') || '';
-      
-      // Special handling for RU/KZ (+7) to strip leading 8
-      const countryData = iti.getSelectedCountryData();
-      if (countryData.dialCode === '7') {
-         if (val.startsWith('8')) {
-             val = val.slice(1);
-         }
-         // For Russia specifically, also strip leading 7 if user types "7..." thinking it's +7
-         if (countryData.iso2 === 'ru' && val.startsWith('7')) {
-             val = val.slice(1);
-         }
-      }
-      
-      // If placeholder contains digits, we can try to mask
-      // Simple strategy: strip non-digits from val, and inject them into placeholder template
-      // This is a naive implementation but works for simple cases like (XXX) XXX-XX-XX
-      
-      // However, a safer bet that intl-tel-input users use is to just rely on formatNumber
-      // But formatNumber requires full number.
-      
-      // Let's implement a simple "replace digits in placeholder" mask
-      // Only if placeholder looks like a mask (contains digits/spaces/brackets)
-      if (placeholder && /[0-9]/.test(placeholder)) {
-          let raw = val.replace(/\D/g, '');
-          const maxDigits = placeholder.replace(/\D/g, '').length;
-          if (maxDigits > 0 && raw.length > maxDigits) {
-              raw = raw.slice(0, maxDigits);
-          }
-          
-          let res = '';
-          let rawIdx = 0;
-          
-          for (let i = 0; i < placeholder.length; i++) {
-              if (rawIdx >= raw.length) break;
-              
-              const pChar = placeholder[i];
-              // If placeholder char is a digit, replace with next raw digit
-              if (/\d/.test(pChar)) {
-                  res += raw[rawIdx++];
-              } else {
-                  // If it's a separator, add it
-                  res += pChar;
-              }
-          }
-          
-          // If we have extra digits (should not happen due to truncation above, but for safety), append them
-          if (rawIdx < raw.length) {
-              res += raw.slice(rawIdx);
-          }
-          
-          // Avoid overwriting if user is deleting (this is tricky with just 'input' event)
-          // But user asked for "input looks like placeholder"
-          if (val !== res) {
-              phoneInput.value = res;
-          }
-      } else {
-          // If no placeholder mask available, just apply the strip 8 logic
-           if (phoneInput.value !== val) {
-              phoneInput.value = val;
-           }
-      }
-    };
-    
-    phoneInput.addEventListener('input', applyMask);
-    // Also re-apply on country change
-    phoneInput.addEventListener('countrychange', () => {
+      const data = iti.getSelectedCountryData() || {};
+      if (data.dialCode !== '7' || data.iso2 !== 'ru') return;
+      let raw = phoneInput.value.replace(/\D/g, '');
+      if (!raw) {
         phoneInput.value = '';
-        applyMask();
+        return;
+      }
+      if (raw[0] === '8' || raw[0] === '7') {
+        raw = raw.slice(1);
+      }
+      const mask = "(999) 999-99-99";
+      let res = "";
+      let di = 0;
+      for (let i = 0; i < mask.length; i++) {
+        const ch = mask[i];
+        if (ch === '9') {
+          if (di < raw.length) {
+            res += raw[di++];
+          } else {
+            break;
+          }
+        } else {
+          if (!di && (ch === ' ' || ch === '-')) continue;
+          res += ch;
+        }
+      }
+      phoneInput.value = res;
+    };
+
+    phoneInput.addEventListener('input', applyMask);
+    phoneInput.addEventListener('countrychange', () => {
+      phoneInput.value = '';
+      if (iti) iti.setNumber('');
+      if (msg) {
+        msg.textContent = '';
+        msg.style.color = 'inherit';
+      }
     });
   }
 
@@ -341,33 +396,38 @@ document.addEventListener('DOMContentLoaded', () => {
           showError(phoneInput, 'Введите номер телефона.');
           return;
         }
-        
-        // Strict length validation aligned with placeholder
-        const placeholder = phoneInput.getAttribute('placeholder') || '';
-        const maxDigits = placeholder.replace(/\D/g, '').length;
-        const currentDigits = rawPhone.replace(/\D/g, '').length;
-        if (maxDigits > 0) {
-            if (currentDigits > maxDigits) {
-                showError(phoneInput, 'Номер слишком длинный для выбранной страны.');
-                return;
+
+        let phoneFull = rawPhone;
+        if (iti) {
+          const data = iti.getSelectedCountryData() || {};
+          const digitsNational = rawPhone.replace(/\D/g, '');
+          if (data.dialCode === '7' && data.iso2 === 'ru') {
+            if (digitsNational.length < 10) {
+              showError(phoneInput, 'Допишите номер: требуется 10 цифр после +7.');
+              return;
             }
-            if (currentDigits < maxDigits) {
-                showError(phoneInput, `Допишите номер: требуется ${maxDigits} цифр.`);
-                return;
+            if (digitsNational.length > 10) {
+              showError(phoneInput, 'Номер слишком длинный.');
+              return;
             }
+          } else {
+            if (digitsNational.length < 7 || digitsNational.length > 15) {
+              showError(phoneInput, 'Введите корректный номер телефона.');
+              return;
+            }
+          }
+          phoneFull = iti.getNumber() || '';
+          if (!phoneFull) {
+            showError(phoneInput, 'Введите корректный номер телефона.');
+            return;
+          }
         } else {
-            // Fallback for rare cases without placeholder digits: use ITI validity or general bounds
-            if (iti && !iti.isValidNumber()) {
-                showError(phoneInput, 'Введите корректный номер телефона.');
-                return;
-            }
-            if (currentDigits < 7 || currentDigits > 15) {
-                showError(phoneInput, 'Введите корректный номер телефона.');
-                return;
-            }
+          const digits = rawPhone.replace(/\D/g, '');
+          if (digits.length < 7 || digits.length > 15) {
+            showError(phoneInput, 'Введите корректный номер телефона.');
+            return;
+          }
         }
-        
-        const phoneFull = iti ? iti.getNumber() : rawPhone;
 
         // 3. Validate Comment
         if (commentVal.length > 1000) {
@@ -431,5 +491,5 @@ document.addEventListener('DOMContentLoaded', () => {
           form.dispatchEvent(new Event('submit', { cancelable: true }));
       }, 500);
     }
-  } catch {}
+  } catch (e) {}
 });
