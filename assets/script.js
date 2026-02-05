@@ -174,8 +174,13 @@ document.addEventListener('DOMContentLoaded', () => {
     phoneInput.value = formatMask(phoneInput.value);
   });
   phoneInput.addEventListener('invalid', () => {
-    phoneInput.setCustomValidity('Введите номер телефона в формате +7 (XXX) XXX-XX-XX.');
-    msg.textContent = 'Введите номер телефона в формате +7 (XXX) XXX-XX-XX.';
+    const v = phoneInput.value.trim();
+    let m = '';
+    if (!v) m = 'Введите номер телефона.';
+    else m = 'Введите номер телефона в формате +7 (XXX) XXX-XX-XX.';
+    phoneInput.setCustomValidity(m);
+    if (!nameInput.validity.valid) return;
+    msg.textContent = m;
     msg.style.color = 'crimson';
   });
   phoneInput.addEventListener('input', () => {
@@ -188,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (v.length > 50) m = 'Имя слишком длинное (макс. 50 символов).';
     else m = 'Введите ваше имя.';
     nameInput.setCustomValidity(m);
+    // Update message regardless since name validation takes priority
     msg.textContent = m;
     msg.style.color = 'crimson';
   });
@@ -198,8 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const v = commentInput.value.trim();
     let m = '';
     if (v.length > 1000) m = 'Комментарий слишком длинный (макс. 1000 символов).';
-    else m = 'Можно написать до 1000 символов.';
+    else m = 'Введите комментарий.';
     commentInput.setCustomValidity(m);
+    if (!nameInput.validity.valid || !phoneInput.validity.valid) return;
     msg.textContent = m;
     msg.style.color = 'crimson';
   });
@@ -226,25 +233,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = form.name.value.trim();
     const phone = form.phone.value.trim();
     const normalized = normalizePhone(phone);
+    
+    // Check for name validation issues first
     if (name.length > 50) {
       msg.textContent = 'Имя слишком длинное (макс. 50 символов).';
       msg.style.color = 'crimson';
+      nameInput.focus();
       return;
     }
+    
     const commentVal = form.comment.value.trim();
     if (commentVal.length > 1000) {
       msg.textContent = 'Комментарий слишком длинный (макс. 1000 символов).';
       msg.style.color = 'crimson';
+      commentInput.focus();
       return;
     }
-    if (!name || !phone) {
-      msg.textContent = 'Заполните имя и телефон.';
+    
+    // Check for empty fields - check name first, then phone
+    if (!name) {
+      msg.textContent = 'Введите имя.';
       msg.style.color = 'crimson';
+      nameInput.focus();
+      return;
+    } else if (!phone) {
+      msg.textContent = 'Введите номер телефона.';
+      msg.style.color = 'crimson';
+      phoneInput.focus();
       return;
     }
+    
+    // Check phone format if not empty but invalid
     if (!normalized) {
       msg.textContent = 'Введите номер в формате +7 (XXX) XXX-XX-XX.';
       msg.style.color = 'crimson';
+      phoneInput.focus();
       return;
     }
     const btn = form.querySelector('button[type="submit"]');
