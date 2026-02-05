@@ -163,10 +163,12 @@ class Handler(SimpleHTTPRequestHandler):
                     f"Телефон: {esc(phone_norm)}\n",
                 ]
                 parts.append(f"Страна: {esc(country_display) if country_display else 'Не указана'}\n")
+                now = datetime.now()
                 parts.extend([
                     f"Комментарий: {esc(comment)}\n",
                     f"Источник: Сайт\n",
-                    f"Время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                    f"Дата: {now.strftime('%d.%m.%Y')}\n",
+                    f"Время: {now.strftime('%H:%M:%S')}"
                 ])
                 text = "".join(parts)
                 success = []

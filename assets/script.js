@@ -303,23 +303,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         phoneInput.value = res;
       } else {
-        // Other countries: Limit total digits to 15 (E.164 standard)
-        // input value is national part, so max = 15 - dialCode length
-        const dialCodeLen = data.dialCode ? data.dialCode.length : 0;
-        const maxNationalDigits = 15 - dialCodeLen;
+        // Other countries: Dynamic mask based on placeholder
+        const placeholder = phoneInput.getAttribute('placeholder') || '';
         
-        let val = phoneInput.value;
-        // Keep trimming last char if digits exceed max
-        while (val.replace(/\D/g, '').length > maxNationalDigits) {
-          val = val.slice(0, -1);
+        // If no placeholder or no digits in it, fallback to generic limit
+        if (!placeholder || !/\d/.test(placeholder)) {
+           let val = phoneInput.value;
+           const dialCodeLen = data.dialCode ? data.dialCode.length : 0;
+           const maxNationalDigits = 15 - dialCodeLen;
+           while (val.replace(/\D/g, '').length > maxNationalDigits) {
+             val = val.slice(0, -1);
+           }
+           if (phoneInput.value !== val) phoneInput.value = val;
+           return;
         }
-        if (phoneInput.value !== val) {
-          phoneInput.value = val;
+
+        let raw = phoneInput.value.replace(/\D/g, '');
+        let res = "";
+        let di = 0;
+
+        for (let i = 0; i < placeholder.length; i++) {
+          const ch = placeholder[i];
+          if (/\d/.test(ch)) {
+            // Treat any digit in placeholder as a slot
+            if (di < raw.length) {
+              res += raw[di++];
+            } else {
+              break;
+            }
+          } else {
+            // Separator (space, bracket, dash, etc.)
+            // Append only if we haven't finished entering numbers yet
+            // (Similar to Russia logic: show separators that come before the next digit)
+            // But if we are at the very end of raw, we might stop?
+            // Actually, the loop breaks at the *next* digit check if exhausted.
+            // So separators between digits are preserved.
+            // Separators after the last digit are preserved ONLY if there is a digit after them that we haven't reached?
+            // No, if we break at the next digit, we won't reach subsequent separators.
+            // So this works: separators strictly *between* or *before* entered digits are shown.
+            res += ch;
+          }
         }
+        phoneInput.value = res;
       }
     };
 
     phoneInput.addEventListener('input', applyMask);
+    // When country changes, clear value and let placeholder update
     phoneInput.addEventListener('countrychange', () => {
       phoneInput.value = '';
       if (iti) iti.setNumber('');
@@ -327,6 +357,8 @@ document.addEventListener('DOMContentLoaded', () => {
         msg.textContent = '';
         msg.style.color = 'inherit';
       }
+      // Re-apply mask to update logic if needed (though value is empty)
+      // We rely on 'input' event mainly, but clearing value is safe.
     });
   }
 
