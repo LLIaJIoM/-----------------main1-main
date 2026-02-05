@@ -17,6 +17,19 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 CHAT_IDS = None
+env_chat_ids = os.environ.get("TELEGRAM_CHAT_IDS")
+if env_chat_ids:
+    try:
+        # Try parsing as JSON first
+        CHAT_IDS = json.loads(env_chat_ids)
+        if not isinstance(CHAT_IDS, list):
+             CHAT_IDS = None
+    except Exception:
+        pass
+    # If not JSON or failed, try comma-separated
+    if not CHAT_IDS:
+        CHAT_IDS = [x.strip() for x in env_chat_ids.split(",") if x.strip()]
+
 try:
     with open(os.path.join(ROOT_DIR, "config.json"), "r", encoding="utf-8") as f:
         cfg = json.load(f)
