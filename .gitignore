@@ -5,3 +5,4 @@ venv/
 .DS_Store
 cloudflared.exe
 requests.log
+config.json
