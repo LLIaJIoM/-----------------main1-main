@@ -102,24 +102,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       if (!list.length) return;
-      list.forEach(src => {
+      list.forEach(src => sources.push(src));
+      const repeated = sources.concat(sources).concat(sources);
+      repeated.forEach(src => {
         const slide = document.createElement('div');
         slide.className = 'carousel-slide';
         slide.style.backgroundImage = `url('${src}')`;
         slide.addEventListener('click', () => openLightbox(src));
         track.appendChild(slide);
-        sources.push(src);
       });
-      let index = Math.floor(Math.random() * sources.length);
+      let index = sources.length + Math.floor(Math.random() * sources.length);
       const update = () => {
         track.style.transform = `translateX(-${index * 100}%)`;
       };
+      const fixLoop = () => {
+        const block = sources.length;
+        if (index >= block * 2) {
+          index -= block;
+          const prev = track.style.transition;
+          track.style.transition = 'none';
+          track.style.transform = `translateX(-${index * 100}%)`;
+          // force reflow
+          void track.offsetHeight;
+          track.style.transition = prev || 'transform .45s ease';
+        } else if (index < block) {
+          index += block;
+          const prev = track.style.transition;
+          track.style.transition = 'none';
+          track.style.transform = `translateX(-${index * 100}%)`;
+          void track.offsetHeight;
+          track.style.transition = prev || 'transform .45s ease';
+        }
+      };
+      track.addEventListener('transitionend', fixLoop);
       btnPrev.addEventListener('click', () => {
-        index = (index - 1 + sources.length) % sources.length;
+        index -= 1;
         update();
       });
       btnNext.addEventListener('click', () => {
-        index = (index + 1) % sources.length;
+        index += 1;
         update();
       });
       window.addEventListener('resize', update);
@@ -141,176 +162,274 @@ document.addEventListener('DOMContentLoaded', () => {
   const nameInput = document.getElementById('name');
   const commentInput = document.getElementById('comment');
 
-  const normalizePhone = raw => {
-    const digits = (raw || '').replace(/\D+/g, '');
-    let d = digits;
-    if (!d) return null;
-    if (d.startsWith('8')) d = '7' + d.slice(1);
-    if (d[0] !== '7') d = '7' + d.slice(0, 10);
-    if (d.length > 11) d = d.slice(0, 11);
-    if (d.length === 11 && d[0] === '7') return '+' + d;
-    return null;
-  };
-  const formatMask = raw => {
-    const digits = (raw || '').replace(/\D+/g, '');
-    let d = digits;
-    if (!d) return '';
-    if (d.startsWith('8')) d = '7' + d.slice(1);
-    if (d[0] !== '7') d = '7' + d;
-    if (d.length > 11) d = d.slice(0, 11);
-    const a = d.slice(1, 4);
-    const b = d.slice(4, 7);
-    const c = d.slice(7, 9);
-    const e = d.slice(9, 11);
-    let out = '+7';
-    if (a) out += ' (' + a;
-    if (a && a.length === 3) out += ')';
-    if (b) out += ' ' + b;
-    if (c) out += '-' + c;
-    if (e) out += '-' + e;
-    return out;
-  };
-  phoneInput.addEventListener('input', () => {
-    phoneInput.value = formatMask(phoneInput.value);
-  });
-  phoneInput.addEventListener('invalid', () => {
-    const v = phoneInput.value.trim();
-    let m = '';
-    if (!v) m = 'Введите номер телефона.';
-    else m = 'Введите номер телефона в формате +7 (XXX) XXX-XX-XX.';
-    phoneInput.setCustomValidity(m);
-    if (!nameInput.validity.valid) return;
-    msg.textContent = m;
-    msg.style.color = 'crimson';
-  });
-  phoneInput.addEventListener('input', () => {
-    phoneInput.setCustomValidity('');
-  });
-  nameInput.addEventListener('invalid', () => {
-    const v = nameInput.value.trim();
-    let m = '';
-    if (!v) m = 'Введите имя.';
-    else if (v.length > 50) m = 'Имя слишком длинное (макс. 50 символов).';
-    else m = 'Введите ваше имя.';
-    nameInput.setCustomValidity(m);
-    // Update message regardless since name validation takes priority
-    msg.textContent = m;
-    msg.style.color = 'crimson';
-  });
-  nameInput.addEventListener('input', () => {
-    nameInput.setCustomValidity('');
-  });
-  commentInput.addEventListener('invalid', () => {
-    const v = commentInput.value.trim();
-    let m = '';
-    if (v.length > 1000) m = 'Комментарий слишком длинный (макс. 1000 символов).';
-    else m = 'Введите комментарий.';
-    commentInput.setCustomValidity(m);
-    if (!nameInput.validity.valid || !phoneInput.validity.valid) return;
-    msg.textContent = m;
-    msg.style.color = 'crimson';
-  });
-  commentInput.addEventListener('input', () => {
-    commentInput.setCustomValidity('');
-    const v = commentInput.value;
-    if (v.length >= 1000) {
-      msg.textContent = 'Превышен допустимый лимит: больше 1000 символов нельзя.';
-      msg.style.color = 'crimson';
-    } else {
-      if (msg.textContent.startsWith('Комментарий')) msg.textContent = '';
-    }
-  });
-  commentInput.addEventListener('beforeinput', e => {
-    const inserting = e.inputType && e.inputType.startsWith('insert');
-    if (inserting && commentInput.value.length >= 1000) {
-      msg.textContent = 'Превышен допустимый лимит: больше 1000 символов нельзя.';
-      msg.style.color = 'crimson';
-    }
-  });
+  // Disable default HTML5 validation to control the order and UI manually
+  if (form) form.setAttribute('novalidate', 'true');
 
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    const name = form.name.value.trim();
-    const phone = form.phone.value.trim();
-    const normalized = normalizePhone(phone);
-    
-    // Check for name validation issues first
-    if (name.length > 50) {
-      msg.textContent = 'Имя слишком длинное (макс. 50 символов).';
-      msg.style.color = 'crimson';
-      nameInput.focus();
-      return;
-    }
-    
-    const commentVal = form.comment.value.trim();
-    if (commentVal.length > 1000) {
-      msg.textContent = 'Комментарий слишком длинный (макс. 1000 символов).';
-      msg.style.color = 'crimson';
-      commentInput.focus();
-      return;
-    }
-    
-    // Check for empty fields - check name first, then phone
-    if (!name) {
-      msg.textContent = 'Введите имя.';
-      msg.style.color = 'crimson';
-      nameInput.focus();
-      return;
-    } else if (!phone) {
-      msg.textContent = 'Введите номер телефона.';
-      msg.style.color = 'crimson';
-      phoneInput.focus();
-      return;
-    }
-    
-    // Check phone format if not empty but invalid
-    if (!normalized) {
-      msg.textContent = 'Введите номер в формате +7 (XXX) XXX-XX-XX.';
-      msg.style.color = 'crimson';
-      phoneInput.focus();
-      return;
-    }
-    const btn = form.querySelector('button[type="submit"]');
-    if (btn) { btn.disabled = true; btn.style.opacity = '.7'; }
-    msg.textContent = 'Отправка...';
-    msg.style.color = 'inherit';
-    const payload = {
-      name,
-      phone: normalized,
-      comment: commentVal,
-      page: location.href
-    };
-    fetch('/api/telegram', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then(async r => {
-      const ok = r.ok;
-      let data = {};
-      try { data = await r.json(); } catch {}
-      if (ok && data.ok) {
-        msg.textContent = 'Заявка отправлена. Мы свяжемся с вами.';
-        msg.style.color = 'seagreen';
-        form.reset();
-      } else {
-        msg.textContent = 'Не удалось отправить. Попробуйте позже.';
-        msg.style.color = 'crimson';
+  // Initialize Intl Tel Input
+  let iti = null;
+  if (window.intlTelInput && phoneInput) {
+    iti = window.intlTelInput(phoneInput, {
+      initialCountry: "ru",
+      separateDialCode: true,
+      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/utils.js",
+      autoPlaceholder: "aggressive",
+      customPlaceholder: function(selectedCountryPlaceholder, selectedCountryData) {
+          // Force bracketed format for RU to ensure it starts with brackets immediately
+          if (selectedCountryData.iso2 === 'ru') {
+              return "(999) 999-99-99";
+          }
+          return selectedCountryPlaceholder;
       }
-    }).catch(() => {
-      msg.textContent = 'Ошибка сети. Повторите позже.';
-      msg.style.color = 'crimson';
-    }).finally(() => {
-      if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
     });
-  });
+
+    // Helper to format number based on placeholder
+    const applyMask = () => {
+      // Get current value and placeholder
+      let val = phoneInput.value;
+      const placeholder = phoneInput.getAttribute('placeholder') || '';
+      
+      // Special handling for RU/KZ (+7) to strip leading 8
+      const countryData = iti.getSelectedCountryData();
+      if (countryData.dialCode === '7') {
+         if (val.startsWith('8')) {
+             val = val.slice(1);
+         }
+         // For Russia specifically, also strip leading 7 if user types "7..." thinking it's +7
+         if (countryData.iso2 === 'ru' && val.startsWith('7')) {
+             val = val.slice(1);
+         }
+      }
+      
+      // If placeholder contains digits, we can try to mask
+      // Simple strategy: strip non-digits from val, and inject them into placeholder template
+      // This is a naive implementation but works for simple cases like (XXX) XXX-XX-XX
+      
+      // However, a safer bet that intl-tel-input users use is to just rely on formatNumber
+      // But formatNumber requires full number.
+      
+      // Let's implement a simple "replace digits in placeholder" mask
+      // Only if placeholder looks like a mask (contains digits/spaces/brackets)
+      if (placeholder && /[0-9]/.test(placeholder)) {
+          let raw = val.replace(/\D/g, '');
+          const maxDigits = placeholder.replace(/\D/g, '').length;
+          if (maxDigits > 0 && raw.length > maxDigits) {
+              raw = raw.slice(0, maxDigits);
+          }
+          
+          let res = '';
+          let rawIdx = 0;
+          
+          for (let i = 0; i < placeholder.length; i++) {
+              if (rawIdx >= raw.length) break;
+              
+              const pChar = placeholder[i];
+              // If placeholder char is a digit, replace with next raw digit
+              if (/\d/.test(pChar)) {
+                  res += raw[rawIdx++];
+              } else {
+                  // If it's a separator, add it
+                  res += pChar;
+              }
+          }
+          
+          // If we have extra digits (should not happen due to truncation above, but for safety), append them
+          if (rawIdx < raw.length) {
+              res += raw.slice(rawIdx);
+          }
+          
+          // Avoid overwriting if user is deleting (this is tricky with just 'input' event)
+          // But user asked for "input looks like placeholder"
+          if (val !== res) {
+              phoneInput.value = res;
+          }
+      } else {
+          // If no placeholder mask available, just apply the strip 8 logic
+           if (phoneInput.value !== val) {
+              phoneInput.value = val;
+           }
+      }
+    };
+    
+    phoneInput.addEventListener('input', applyMask);
+    // Also re-apply on country change
+    phoneInput.addEventListener('countrychange', () => {
+        phoneInput.value = '';
+        applyMask();
+    });
+  }
+
+  const resetMsg = () => {
+    msg.textContent = '';
+    msg.style.color = 'inherit';
+    if (nameInput) nameInput.style.borderColor = '';
+    if (phoneInput) phoneInput.style.borderColor = '';
+    if (commentInput) commentInput.style.borderColor = '';
+    // Fix intl-tel-input container border if needed, usually it wraps input
+    if (phoneInput) {
+        const itiContainer = phoneInput.closest('.iti');
+        if (itiContainer) itiContainer.style.borderColor = '';
+    }
+  };
+
+  const showError = (el, message) => {
+    msg.textContent = message;
+    msg.style.color = 'crimson';
+    if (el) {
+        el.style.borderColor = 'crimson';
+        if (el === phoneInput) {
+            const itiContainer = phoneInput.closest('.iti');
+            if (itiContainer) itiContainer.style.borderColor = 'crimson';
+        }
+        el.focus();
+    }
+  };
+
+  if (form) {
+      [nameInput, phoneInput, commentInput].forEach(el => {
+        if (!el) return;
+        el.addEventListener('input', () => {
+          if (el === nameInput) {
+              const v = el.value;
+              const cleaned = v.replace(/[^A-Za-zА-Яа-яЁё\s-]/g, '');
+              if (v !== cleaned) el.value = cleaned;
+          }
+          // Clear error style on input
+          el.style.borderColor = '';
+          if (el === phoneInput) {
+              const itiContainer = phoneInput.closest('.iti');
+              if (itiContainer) itiContainer.style.borderColor = '';
+          }
+          // If the current error message is related to this field, clear it
+          if (msg.style.color === 'crimson') {
+              msg.textContent = '';
+          }
+          
+          // Real-time length check for comment
+          if (el === commentInput) {
+              if (el.value.length >= 1000) {
+                  msg.textContent = 'Превышен допустимый лимит: больше 1000 символов нельзя.';
+                  msg.style.color = 'crimson';
+              }
+          }
+        });
+      });
+
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        resetMsg();
+
+        const name = nameInput.value.trim();
+        const commentVal = commentInput.value.trim();
+        
+        // 1. Validate Name
+        if (!name) {
+          showError(nameInput, 'Введите имя.');
+          return;
+        }
+        if (!/^[A-Za-zА-Яа-яЁё\s-]+$/.test(name)) {
+          showError(nameInput, 'Имя должно содержать только буквы.');
+          return;
+        }
+        if (name.length > 50) {
+          showError(nameInput, 'Имя слишком длинное (макс. 50 символов).');
+          return;
+        }
+
+        // 2. Validate Phone
+        const rawPhone = phoneInput.value.trim();
+        if (!rawPhone) {
+          showError(phoneInput, 'Введите номер телефона.');
+          return;
+        }
+        
+        // Strict length validation aligned with placeholder
+        const placeholder = phoneInput.getAttribute('placeholder') || '';
+        const maxDigits = placeholder.replace(/\D/g, '').length;
+        const currentDigits = rawPhone.replace(/\D/g, '').length;
+        if (maxDigits > 0) {
+            if (currentDigits > maxDigits) {
+                showError(phoneInput, 'Номер слишком длинный для выбранной страны.');
+                return;
+            }
+            if (currentDigits < maxDigits) {
+                showError(phoneInput, `Допишите номер: требуется ${maxDigits} цифр.`);
+                return;
+            }
+        } else {
+            // Fallback for rare cases without placeholder digits: use ITI validity or general bounds
+            if (iti && !iti.isValidNumber()) {
+                showError(phoneInput, 'Введите корректный номер телефона.');
+                return;
+            }
+            if (currentDigits < 7 || currentDigits > 15) {
+                showError(phoneInput, 'Введите корректный номер телефона.');
+                return;
+            }
+        }
+        
+        const phoneFull = iti ? iti.getNumber() : rawPhone;
+
+        // 3. Validate Comment
+        if (commentVal.length > 1000) {
+          showError(commentInput, 'Комментарий слишком длинный (макс. 1000 символов).');
+          return;
+        }
+
+        // Submit
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; btn.style.opacity = '.7'; }
+        msg.textContent = 'Отправка...';
+        msg.style.color = 'inherit';
+        
+        const payload = {
+          name,
+          phone: phoneFull,
+          comment: commentVal,
+          page: location.href
+        };
+        if (iti) {
+          const cd = iti.getSelectedCountryData() || {};
+          payload.phone_country = cd.name || '';
+          payload.phone_iso2 = cd.iso2 || '';
+          payload.phone_dial_code = cd.dialCode || '';
+        }
+        
+        fetch('/api/telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(async r => {
+          const ok = r.ok;
+          let data = {};
+          try { data = await r.json(); } catch {}
+          if (ok && data.ok) {
+            msg.textContent = 'Заявка отправлена. Мы свяжемся с вами.';
+            msg.style.color = 'seagreen';
+            form.reset();
+            if (iti) iti.setNumber(''); // Reset flags/input
+          } else {
+            msg.textContent = 'Не удалось отправить. Попробуйте позже.';
+            msg.style.color = 'crimson';
+          }
+        }).catch(() => {
+          msg.textContent = 'Ошибка сети. Повторите позже.';
+          msg.style.color = 'crimson';
+        }).finally(() => {
+          if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+        });
+      });
+  }
 
   try {
     const qs = new URLSearchParams(location.search);
     if (qs.get('autotest') === '1' && form) {
       form.name.value = form.name.value || 'Тест';
-      form.phone.value = form.phone.value || '+79990000000';
+      if (iti) iti.setNumber('+79990000000');
+      else form.phone.value = '+79990000000';
       form.comment.value = form.comment.value || 'Автотест';
-      form.dispatchEvent(new Event('submit', { cancelable: true }));
+      setTimeout(() => {
+          form.dispatchEvent(new Event('submit', { cancelable: true }));
+      }, 500);
     }
   } catch {}
 });

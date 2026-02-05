@@ -80,3 +80,22 @@ class ServerTestCase(unittest.TestCase):
         obj = json.loads(data.decode("utf-8"))
         self.assertFalse(obj["ok"])
         self.assertEqual(obj["error"], "invalid_phone")
+
+    def test_invalid_name_chars_returns_400(self):
+        server.BOT_TOKEN = None
+        server.CHAT_ID = None
+        resp = self._post({"name": "Ivan123", "phone": "+79990000000"})
+        data = resp.read()
+        self.assertEqual(resp.status, 400)
+        obj = json.loads(data.decode("utf-8"))
+        self.assertFalse(obj["ok"])
+        self.assertEqual(obj["error"], "invalid_name_chars")
+
+    def test_valid_cyrillic_name_ok(self):
+        server.BOT_TOKEN = None
+        server.CHAT_ID = None
+        resp = self._post({"name": "Мария-Анна", "phone": "+79990000000"})
+        data = resp.read()
+        self.assertEqual(resp.status, 200)
+        obj = json.loads(data.decode("utf-8"))
+        self.assertTrue(obj["ok"])
