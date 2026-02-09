@@ -23,7 +23,10 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const id = a.getAttribute('href').slice(1);
       const el = document.getElementById(id);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (el) {
+        history.pushState(null, null, '#' + id);
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     });
   });
 
@@ -541,4 +544,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 500);
     }
   } catch (e) {}
+
+  // ScrollSpy: Update URL hash when scrolling through sections
+  const spyObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.getAttribute('id');
+        if (id) {
+          // Use replaceState to update URL without adding to history stack
+          history.replaceState(null, null, '#' + id);
+        }
+      }
+    });
+  }, {
+    root: null,
+    rootMargin: '-50% 0px -50% 0px', // Active when section is in the middle of viewport
+    threshold: 0
+  });
+
+  document.querySelectorAll('section[id]').forEach(section => {
+    spyObserver.observe(section);
+  });
 });
