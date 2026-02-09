@@ -35,6 +35,14 @@
   white-space: nowrap;
 }
 
+.emergency-item.contact {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .emergency-item.contact a {
   display: inline-block;
   background: #fff;
