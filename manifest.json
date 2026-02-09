@@ -1,0 +1,21 @@
+{
+  "name": "Тёплый Дом",
+  "short_name": "Тёплый Дом",
+  "description": "Услуги по монтажу и сервису котлов",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#FF5722",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/"
+}
