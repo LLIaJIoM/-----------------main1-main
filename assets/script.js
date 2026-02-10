@@ -195,8 +195,15 @@ document.addEventListener('DOMContentLoaded', () => {
       "assets/portfolio/photo_9_2026-02-04_20-03-53.jpg",
       "assets/portfolio/photo_9_2026-02-04_20-15-16.jpg"
     ];
-    const maxPhotos = 12;
-    const list = allPhotos.slice(0, maxPhotos);
+    const shuffle = (array) => {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    };
+    // Use all photos, but shuffled to avoid repetition patterns
+    const list = shuffle([...allPhotos]);
     if (!list.length) return;
     list.forEach(src => sources.push(src));
     const repeated = sources.concat(sources).concat(sources);
