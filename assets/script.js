@@ -202,8 +202,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       return array;
     };
-    // Use all photos, but shuffled to avoid repetition patterns
-    const list = shuffle([...allPhotos]);
+
+    // Filter out duplicates based on file prefix (e.g. photo_10_...)
+    const uniqueMap = new Map();
+    allPhotos.forEach(src => {
+      const match = src.match(/\/photo_(\d+)_/);
+      if (match) {
+        uniqueMap.set(match[1], src);
+      } else {
+        uniqueMap.set(src, src);
+      }
+    });
+    const uniquePhotos = Array.from(uniqueMap.values());
+
+    // Use all unique photos, shuffled
+    const list = shuffle([...uniquePhotos]);
     if (!list.length) return;
     list.forEach(src => sources.push(src));
     const repeated = sources.concat(sources).concat(sources);
