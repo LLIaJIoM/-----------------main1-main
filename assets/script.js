@@ -9,11 +9,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const navToggle = document.querySelector('.nav-toggle');
   const nav = document.querySelector('.nav');
   if (navToggle && nav) {
+    const setExpanded = value => {
+      navToggle.setAttribute('aria-expanded', value ? 'true' : 'false');
+    };
+    setExpanded(false);
     navToggle.addEventListener('click', () => {
-      nav.classList.toggle('open');
+      const open = nav.classList.toggle('open');
+      setExpanded(open);
     });
     nav.querySelectorAll('a').forEach(a => {
-      a.addEventListener('click', () => nav.classList.remove('open'));
+      a.addEventListener('click', () => {
+        nav.classList.remove('open');
+        setExpanded(false);
+      });
     });
   }
 
@@ -30,31 +38,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  const heroEl = document.querySelector('.wide-image');
-  if (heroEl && !isLite) {
-    const test = new Image();
-    test.onload = () => {
-      heroEl.style.background = 'none';
-      heroEl.style.height = 'auto';
-      const img = test;
-      img.style.width = '100%';
-      img.style.height = 'auto';
-      img.style.display = 'block';
-      img.alt = 'Профессиональный ремонт и монтаж котлов';
-      heroEl.appendChild(img);
-    };
-    test.onerror = () => {};
-    test.src = 'assets/hero.jpg';
-  }
-
   const items = document.querySelectorAll('.accordion-item');
-  items.forEach(item => {
+  items.forEach((item, idx) => {
     const btn = item.querySelector('.accordion-btn');
-    btn.addEventListener('click', () => {
-      const open = item.classList.contains('open');
-      items.forEach(i => i.classList.remove('open'));
-      if (!open) item.classList.add('open');
-    });
+    const content = item.querySelector('.accordion-content');
+    if (btn && content) {
+      const id = `faq-panel-${idx + 1}`;
+      content.id = id;
+      btn.setAttribute('aria-controls', id);
+      btn.setAttribute('aria-expanded', 'false');
+      content.setAttribute('aria-hidden', 'true');
+    }
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const open = item.classList.contains('open');
+        items.forEach(i => {
+          i.classList.remove('open');
+          const b = i.querySelector('.accordion-btn');
+          const c = i.querySelector('.accordion-content');
+          if (b) b.setAttribute('aria-expanded', 'false');
+          if (c) c.setAttribute('aria-hidden', 'true');
+        });
+        if (!open) {
+          item.classList.add('open');
+          if (btn) btn.setAttribute('aria-expanded', 'true');
+          if (content) content.setAttribute('aria-hidden', 'false');
+        }
+      });
+    }
   });
 
   const track = document.querySelector('.carousel-track');
@@ -62,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnNext = document.querySelector('.carousel-btn.next');
   if (track && btnPrev && btnNext && !isLite) {
     const sources = [];
+    const dotsContainer = document.querySelector('.carousel-dots');
     const lightbox = document.createElement('div');
     lightbox.className = 'lightbox';
     const inner = document.createElement('div');
@@ -84,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') closeLightbox();
     });
-    const allPhotos = [
+    const fallbackPhotos = [
       "assets/portfolio/photo_10_2026-02-04_20-03-53.jpg",
       "assets/portfolio/photo_10_2026-02-04_20-15-16.jpg",
       "assets/portfolio/photo_11_2026-02-04_20-03-53.jpg",
@@ -203,72 +215,113 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       return array;
     };
-
-    // Filter out duplicates based on file prefix (e.g. photo_10_...)
-    const uniqueMap = new Map();
-    allPhotos.forEach(src => {
-      const match = src.match(/\/photo_(\d+)_/);
-      if (match) {
-        uniqueMap.set(match[1], src);
-      } else {
-        uniqueMap.set(src, src);
+    const getPortfolioList = async () => {
+      try {
+        const res = await fetch('assets/portfolio/index.json', { cache: 'no-store' });
+        if (!res.ok) return fallbackPhotos;
+        const data = await res.json();
+        if (!Array.isArray(data) || !data.length) return fallbackPhotos;
+        return data.map(name => `assets/portfolio/${name}`);
+      } catch (e) {
+        return fallbackPhotos;
       }
-    });
-    const uniquePhotos = Array.from(uniqueMap.values());
-
-    // Use all unique photos, shuffled
-    const list = shuffle([...uniquePhotos]);
-    if (!list.length) return;
-    list.forEach(src => sources.push(src));
-    const repeated = sources.concat(sources).concat(sources);
-    repeated.forEach(src => {
-      const slide = document.createElement('div');
-      slide.className = 'carousel-slide';
-      slide.style.backgroundImage = `url('${src}')`;
-      slide.addEventListener('click', () => openLightbox(src));
-      track.appendChild(slide);
-    });
-    let index = sources.length + Math.floor(Math.random() * sources.length);
-    const update = () => {
-      track.style.transform = `translateX(-${index * 100}%)`;
     };
-    const fixLoop = () => {
+    const buildCarousel = (allPhotos) => {
+      const uniqueMap = new Map();
+      allPhotos.forEach(src => {
+        const match = src.match(/\/photo_(\d+)_/);
+        if (match) {
+          uniqueMap.set(match[1], src);
+        } else {
+          uniqueMap.set(src, src);
+        }
+      });
+      const uniquePhotos = Array.from(uniqueMap.values());
+      const list = shuffle([...uniquePhotos]);
+      if (!list.length) return;
+      list.forEach(src => sources.push(src));
+      const repeated = sources.concat(sources).concat(sources);
+      repeated.forEach(src => {
+        const slide = document.createElement('div');
+        slide.className = 'carousel-slide';
+        slide.style.backgroundImage = `url('${src}')`;
+        slide.addEventListener('click', () => openLightbox(src));
+        track.appendChild(slide);
+      });
+      let index = sources.length + Math.floor(Math.random() * sources.length);
       const block = sources.length;
-      if (index >= block * 2) {
-        index -= block;
-        const prev = track.style.transition;
-        track.style.transition = 'none';
+      const createDots = () => {
+        if (!dotsContainer) return;
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i < block; i++) {
+          const dot = document.createElement('button');
+          dot.type = 'button';
+          dot.className = 'carousel-dot';
+          dot.setAttribute('aria-label', `Слайд ${i + 1}`);
+          dot.addEventListener('click', () => {
+            index = block + i;
+            update();
+          });
+          dotsContainer.appendChild(dot);
+        }
+      };
+      const setActiveDot = () => {
+        if (!dotsContainer) return;
+        const active = ((index % block) + block) % block;
+        dotsContainer.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+          const isActive = i === active;
+          dot.classList.toggle('active', isActive);
+          dot.setAttribute('aria-current', isActive ? 'true' : 'false');
+        });
+      };
+      const update = () => {
         track.style.transform = `translateX(-${index * 100}%)`;
-        void track.offsetHeight;
-        track.style.transition = prev || 'transform .45s ease';
-      } else if (index < block) {
-        index += block;
-        const prev = track.style.transition;
-        track.style.transition = 'none';
-        track.style.transform = `translateX(-${index * 100}%)`;
-        void track.offsetHeight;
-        track.style.transition = prev || 'transform .45s ease';
-      }
+        setActiveDot();
+      };
+      const fixLoop = () => {
+        if (index >= block * 2) {
+          index -= block;
+          const prev = track.style.transition;
+          track.style.transition = 'none';
+          track.style.transform = `translateX(-${index * 100}%)`;
+          void track.offsetHeight;
+          track.style.transition = prev || 'transform .45s ease';
+        } else if (index < block) {
+          index += block;
+          const prev = track.style.transition;
+          track.style.transition = 'none';
+          track.style.transform = `translateX(-${index * 100}%)`;
+          void track.offsetHeight;
+          track.style.transition = prev || 'transform .45s ease';
+        }
+        setActiveDot();
+      };
+      createDots();
+      track.addEventListener('transitionend', fixLoop);
+      btnPrev.addEventListener('click', () => {
+        index -= 1;
+        update();
+      });
+      btnNext.addEventListener('click', () => {
+        index += 1;
+        update();
+      });
+      window.addEventListener('resize', update);
+      let sx = 0, dx = 0;
+      track.addEventListener('touchstart', e => { sx = e.touches[0].clientX; dx = 0; }, { passive: true });
+      track.addEventListener('touchmove', e => { dx = e.touches[0].clientX - sx; }, { passive: true });
+      track.addEventListener('touchend', () => {
+        if (Math.abs(dx) > 40) {
+          if (dx < 0) btnNext.click(); else btnPrev.click();
+        }
+      });
+      update();
     };
-    track.addEventListener('transitionend', fixLoop);
-    btnPrev.addEventListener('click', () => {
-      index -= 1;
-      update();
-    });
-    btnNext.addEventListener('click', () => {
-      index += 1;
-      update();
-    });
-    window.addEventListener('resize', update);
-    let sx = 0, dx = 0;
-    track.addEventListener('touchstart', e => { sx = e.touches[0].clientX; dx = 0; }, { passive: true });
-    track.addEventListener('touchmove', e => { dx = e.touches[0].clientX - sx; }, { passive: true });
-    track.addEventListener('touchend', () => {
-      if (Math.abs(dx) > 40) {
-        if (dx < 0) btnNext.click(); else btnPrev.click();
-      }
-    });
-    update();
+    const initCarousel = async () => {
+      const allPhotos = await getPortfolioList();
+      buildCarousel(allPhotos);
+    };
+    initCarousel();
   }
 
   const form = document.getElementById('feedback-form');

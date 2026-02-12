@@ -12,7 +12,11 @@
   <meta property="og:description" content="Профессиональный монтаж, ремонт и обслуживание газовых котлов в Москве и Московской области. Срочный выезд мастера, гарантия.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ru_RU">
-  <meta property="og:image" content="/assets/hero.jpg">
+  <meta property="og:url" content="https://tepliy-dom.online/">
+  <meta property="og:site_name" content="Тёплый Дом">
+  <meta property="og:image" content="https://tepliy-dom.online/assets/hero.jpg">
+  <link rel="canonical" href="https://tepliy-dom.online/">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LocalBusiness","name":"Тёплый Дом","url":"https://tepliy-dom.online/","telephone":"+7-929-678-36-56","areaServed":"Москва и Московская область","image":"https://tepliy-dom.online/assets/hero.jpg","description":"Профессиональный монтаж, ремонт и обслуживание газовых котлов в Москве и Московской области. Срочный выезд мастера, гарантия, запчасти в наличии. Тёплый Дом."}</script>
   
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
@@ -55,8 +59,8 @@
     </div>
     <div class="container header-inner">
       <div class="brand">Тёплый Дом</div>
-      <button class="nav-toggle" aria-label="Меню">☰</button>
-      <nav class="nav">
+      <button class="nav-toggle" aria-label="Меню" aria-controls="site-nav" aria-expanded="false" type="button">☰</button>
+      <nav class="nav" id="site-nav">
         <a href="#about">Главная</a>
         <a href="#services">Услуги</a>
         <a href="#portfolio">Портфолио</a>
@@ -69,6 +73,7 @@
   <main>
     <section id="about" class="section section-dark">
       <div class="container">
+        <h1 class="page-title">Тёплый Дом — ремонт и обслуживание котлов</h1>
         <h2>О компании</h2>
         <div class="lead">
           Компания «Тёплый Дом» — тепло и надёжность вашего дома с 2012 года.
@@ -84,7 +89,9 @@
           <a href="#feedback" class="btn btn-cta">Связаться</a>
         </div>
       </div>
-      <div class="wide-image" aria-label="Фото оборудования"></div>
+      <div class="wide-image" aria-label="Фото оборудования">
+        <img src="assets/hero.jpg" alt="Профессиональный ремонт и монтаж котлов" loading="eager" fetchpriority="high">
+      </div>
     </section>
 
     <section id="services" class="section">
@@ -163,6 +170,7 @@
           <div class="carousel-track"></div>
           <button class="carousel-btn prev" aria-label="Предыдущее">‹</button>
           <button class="carousel-btn next" aria-label="Следующее">›</button>
+          <div class="carousel-dots"></div>
         </div>
       </div>
     </section>
@@ -248,11 +256,11 @@
         <form id="feedback-form" class="form">
           <div class="form-row">
             <label for="name">Имя</label>
-            <input id="name" name="name" type="text" placeholder="Имя" required maxlength="50" pattern="[A-Za-zА-Яа-яЁё\s\-]+" title="Только буквы (макс. 50 символов)">
+            <input id="name" name="name" type="text" placeholder="Имя" required maxlength="50" pattern="[A-Za-zА-Яа-яЁё\s\-]+" title="Только буквы (макс. 50 символов)" autocomplete="name">
           </div>
           <div class="form-row">
             <label for="phone">Телефон</label>
-            <input id="phone" name="phone" type="tel" required style="width: 100%;">
+            <input id="phone" name="phone" type="tel" required style="width: 100%;" autocomplete="tel" inputmode="tel">
           </div>
           <div class="form-row">
             <label for="comment">Комментарий</label>
