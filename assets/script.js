@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
       img.style.width = '100%';
       img.style.height = 'auto';
       img.style.display = 'block';
+      img.alt = 'Профессиональный ремонт и монтаж котлов';
       heroEl.appendChild(img);
     };
     test.onerror = () => {};
@@ -584,5 +585,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('section[id]').forEach(section => {
     spyObserver.observe(section);
+  });
+
+  // Back to Top Logic
+  const backToTopBtn = document.getElementById('backToTop');
+  if (backToTopBtn) {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 400) {
+        backToTopBtn.classList.add('show');
+      } else {
+        backToTopBtn.classList.remove('show');
+      }
+    });
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // Scroll Animations (Intersection Observer)
+  const observerOptions = {
+    threshold: 0.1
+  };
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target); // Animate only once
+      }
+    });
+  }, observerOptions);
+
+  // Add fade-up class to sections and other major elements
+  const animatedElements = document.querySelectorAll('.section, .card, .service, .feature, .wide-image, .carousel');
+  animatedElements.forEach(el => {
+    el.classList.add('fade-up');
+    observer.observe(el);
   });
 });
