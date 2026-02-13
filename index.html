@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101316">
   <title>Тёплый Дом — услуги по монтажу и сервису котлов</title>
   <meta name="description" content="Профессиональный монтаж, ремонт и обслуживание газовых котлов в Москве и Московской области. Срочный выезд мастера, гарантия, запчасти в наличии. Тёплый Дом.">
   <meta name="keywords" content="ремонт котлов, монтаж отопления, обслуживание газовых котлов, Москва, Московская область, Тёплый Дом, промывка системы отопления">
@@ -24,6 +25,7 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  <link rel="preload" as="image" href="assets/hero.jpg">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/css/intlTelInput.css">
   <link rel="stylesheet" href="assets/styles.css?v=2">
   <link rel="stylesheet" href="assets/emergency.css">
@@ -42,6 +44,7 @@
   <!-- /Yandex.Metrika counter -->
 </head>
 <body>
+  <a class="skip-link" href="#main">Перейти к содержанию</a>
   <header class="site-header">
     <div class="emergency-bar">
       <div class="container emergency-flex">
@@ -60,7 +63,7 @@
     <div class="container header-inner">
       <div class="brand">Тёплый Дом</div>
       <button class="nav-toggle" aria-label="Меню" aria-controls="site-nav" aria-expanded="false" type="button">☰</button>
-      <nav class="nav" id="site-nav">
+      <nav class="nav" id="site-nav" aria-label="Основная навигация">
         <a href="#about">Главная</a>
         <a href="#services">Услуги</a>
         <a href="#portfolio">Портфолио</a>
@@ -70,7 +73,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="main">
     <section id="about" class="section section-dark">
       <div class="container">
         <h1 class="page-title">Тёплый Дом — ремонт и обслуживание котлов</h1>
@@ -90,7 +93,7 @@
         </div>
       </div>
       <div class="wide-image" aria-label="Фото оборудования">
-        <img src="assets/hero.jpg" alt="Профессиональный ремонт и монтаж котлов" loading="eager" fetchpriority="high">
+        <img src="assets/hero.jpg" alt="Профессиональный ремонт и монтаж котлов" loading="eager" fetchpriority="high" decoding="async" width="1120" height="420">
       </div>
     </section>
 

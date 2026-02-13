@@ -25,7 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const navLinks = document.querySelectorAll('.nav a[href^="#"]');
+  const navLinks = document.querySelectorAll('a[href^="#"]');
+  const navMenuLinks = document.querySelectorAll('.nav a[href^="#"]');
+  const navLinkMap = new Map();
+  navMenuLinks.forEach(a => {
+    const id = a.getAttribute('href').slice(1);
+    if (id) navLinkMap.set(id, a);
+  });
   navLinks.forEach(a => {
     a.addEventListener('click', e => {
       e.preventDefault();
@@ -34,11 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (el) {
         history.pushState(null, null, '#' + id);
         
-        // Calculate offset based on current header height
         const header = document.querySelector('.site-header');
         const headerHeight = header ? header.offsetHeight : 0;
-        const elementPosition = el.getBoundingClientRect().top + window.scrollY;
-        const offsetPosition = elementPosition - headerHeight;
+        let elementPosition = el.getBoundingClientRect().top + window.scrollY;
+
+        const buffer = id === 'feedback' ? -30 : 20;
+        const offsetPosition = elementPosition - headerHeight - buffer;
 
         window.scrollTo({
           top: offsetPosition,
@@ -682,6 +689,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (id) {
           // Use replaceState to update URL without adding to history stack
           history.replaceState(null, null, '#' + id);
+          navMenuLinks.forEach(link => {
+            link.classList.remove('active');
+            link.removeAttribute('aria-current');
+          });
+          const activeLink = navLinkMap.get(id);
+          if (activeLink) {
+            activeLink.classList.add('active');
+            activeLink.setAttribute('aria-current', 'page');
+          }
         }
       }
     });
@@ -706,7 +722,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     backToTopBtn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const aboutSection = document.getElementById('about');
+      if (aboutSection) {
+        // Calculate offset based on header height
+        const header = document.querySelector('.site-header');
+        const headerHeight = header ? header.offsetHeight : 0;
+        const elementPosition = aboutSection.getBoundingClientRect().top + window.scrollY;
+        const offsetPosition = elementPosition - headerHeight - 20;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+        
+        // Update URL hash
+        history.pushState(null, null, '#about');
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     });
   }
 
