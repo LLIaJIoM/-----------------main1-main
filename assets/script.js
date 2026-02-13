@@ -724,6 +724,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     backToTopBtn.addEventListener('click', () => {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+        active.blur();
+      }
       const aboutSection = document.getElementById('about');
       if (aboutSection) {
         // Calculate offset based on header height
