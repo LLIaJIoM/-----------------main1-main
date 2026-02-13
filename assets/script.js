@@ -33,7 +33,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const el = document.getElementById(id);
       if (el) {
         history.pushState(null, null, '#' + id);
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // Calculate offset based on current header height
+        const header = document.querySelector('.site-header');
+        const headerHeight = header ? header.offsetHeight : 0;
+        const elementPosition = el.getBoundingClientRect().top + window.scrollY;
+        const offsetPosition = elementPosition - headerHeight;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
       }
     });
   });
@@ -380,48 +390,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         phoneInput.value = res;
       } else {
-        // Other countries: Dynamic mask based on placeholder
+        // Other countries: Strict mask based on placeholder
+        // User wants digits to be entered "according to the placeholder"
         const placeholder = phoneInput.getAttribute('placeholder') || '';
         
-        // If no placeholder or no digits in it, fallback to generic limit
-        if (!placeholder || !/\d/.test(placeholder)) {
-           let val = phoneInput.value;
-           const dialCodeLen = data.dialCode ? data.dialCode.length : 0;
-           const maxNationalDigits = 15 - dialCodeLen;
-           while (val.replace(/\D/g, '').length > maxNationalDigits) {
-             val = val.slice(0, -1);
-           }
-           if (phoneInput.value !== val) phoneInput.value = val;
-           return;
+        // Check if placeholder looks like a mask (contains digits)
+        if (placeholder && /\d/.test(placeholder)) {
+             let raw = phoneInput.value.replace(/\D/g, '');
+             let res = "";
+             let digitIdx = 0;
+             
+             for (let i = 0; i < placeholder.length; i++) {
+                 const ch = placeholder[i];
+                 if (/\d/.test(ch)) {
+                     // Digit slot
+                     if (digitIdx < raw.length) {
+                         res += raw[digitIdx++];
+                     } else {
+                         break; // No more digits to fill
+                     }
+                 } else {
+                     // Separator (space, bracket, dash, etc.)
+                     // Only show separator if we have digits following it (or we are in the middle of typing)
+                     // To avoid "stuck" separators on backspace, we only show if followed by a digit.
+                     if (digitIdx < raw.length) {
+                         res += ch;
+                     } else {
+                         // Trailing separator? Stop here.
+                         break;
+                     }
+                 }
+             }
+             phoneInput.value = res;
+        } else {
+             // Fallback for countries with no digit-placeholder: just limit length
+             const maxDigits = 15;
+             let val = phoneInput.value.replace(/\D/g, '');
+             if (val.length > maxDigits) val = val.slice(0, maxDigits);
+             if (phoneInput.value.replace(/\D/g, '') !== val) {
+                 phoneInput.value = val; 
+             }
         }
-
-        let raw = phoneInput.value.replace(/\D/g, '');
-        let res = "";
-        let di = 0;
-
-        for (let i = 0; i < placeholder.length; i++) {
-          const ch = placeholder[i];
-          if (/\d/.test(ch)) {
-            // Treat any digit in placeholder as a slot
-            if (di < raw.length) {
-              res += raw[di++];
-            } else {
-              break;
-            }
-          } else {
-            // Separator (space, bracket, dash, etc.)
-            // Append only if we haven't finished entering numbers yet
-            // (Similar to Russia logic: show separators that come before the next digit)
-            // But if we are at the very end of raw, we might stop?
-            // Actually, the loop breaks at the *next* digit check if exhausted.
-            // So separators between digits are preserved.
-            // Separators after the last digit are preserved ONLY if there is a digit after them that we haven't reached?
-            // No, if we break at the next digit, we won't reach subsequent separators.
-            // So this works: separators strictly *between* or *before* entered digits are shown.
-            res += ch;
-          }
-        }
-        phoneInput.value = res;
       }
     };
 
@@ -525,28 +534,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let phoneFull = rawPhone;
         if (iti) {
-          const data = iti.getSelectedCountryData() || {};
-          const digitsNational = rawPhone.replace(/\D/g, '');
-          if (data.dialCode === '7' && data.iso2 === 'ru') {
-            if (digitsNational.length < 10) {
-              showError(phoneInput, 'Допишите номер: требуется 10 цифр после +7.');
-              return;
-            }
-            if (digitsNational.length > 10) {
-              showError(phoneInput, 'Номер слишком длинный.');
-              return;
-            }
-          } else {
-            if (digitsNational.length < 7 || digitsNational.length > 15) {
-              showError(phoneInput, 'Введите корректный номер телефона.');
-              return;
-            }
-          }
-          phoneFull = iti.getNumber() || '';
-          if (!phoneFull) {
-            showError(phoneInput, 'Введите корректный номер телефона.');
+          if (!iti.isValidNumber()) {
+            const errorCode = iti.getValidationError();
+            let errorMsg = 'Введите корректный номер телефона.';
+            
+            // Map error codes
+            // 0: IS_POSSIBLE (shouldn't happen if invalid)
+            // 1: INVALID_COUNTRY_CODE
+            // 2: TOO_SHORT
+            // 3: TOO_LONG
+            // 4: IS_POSSIBLE_LOCAL_ONLY
+            // 5: INVALID_LENGTH
+            if (errorCode === 1) errorMsg = 'Неверный код страны.';
+            if (errorCode === 2) errorMsg = 'Номер слишком короткий.';
+            if (errorCode === 3) errorMsg = 'Номер слишком длинный.';
+            // For general invalid number (e.g. invalid area code 444 in RU)
+            if (errorCode === 0 || errorCode === 4 || errorCode === -99) errorMsg = 'Некорректный номер (проверьте код оператора).';
+
+            showError(phoneInput, errorMsg);
             return;
           }
+          phoneFull = iti.getNumber();
         } else {
           const digits = rawPhone.replace(/\D/g, '');
           if (digits.length < 7 || digits.length > 15) {
@@ -562,7 +570,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Submit
-        const btn = form.querySelector('button[type="submit"]');
+        const btn = form.querySelector('button[value="telegram"]'); // Default loading indicator on telegram button
+        
+        // Determine Action
+        const submitter = e.submitter;
+        const action = submitter ? submitter.value : 'telegram'; // default to telegram if enter pressed
+
+        // WhatsApp Action
+        if (action === 'whatsapp') {
+          const waPhone = '79296783656'; 
+          const waText = `Здравствуйте! Оставляю заявку с сайта.\nИмя: ${name}\nТелефон: ${phoneFull}\nКомментарий: ${commentVal}`;
+          // Use custom protocol to avoid opening a web page/tab. 
+          // If installed: opens app. If not: stays on page (Telegram still sent).
+          const waUrl = `whatsapp://send?phone=${waPhone}&text=${encodeURIComponent(waText)}`;
+          
+          // 1. Send notification to Telegram (using keepalive to ensure it sends even if page unloads)
+          const waPayload = {
+            name,
+            phone: phoneFull,
+            comment: commentVal,
+            page: location.href,
+            source: 'WhatsApp'
+          };
+          if (iti) {
+            const cd = iti.getSelectedCountryData() || {};
+            waPayload.phone_country = cd.name || '';
+            waPayload.phone_iso2 = cd.iso2 || '';
+            waPayload.phone_dial_code = cd.dialCode || '';
+          }
+          fetch('/api/telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            keepalive: true,
+            body: JSON.stringify(waPayload)
+          }).catch(() => {}); 
+
+          // 2. UI Updates: Clear form and show success message
+          msg.textContent = 'Заявка отправлена. Мы свяжемся с вами.';
+          msg.style.color = 'seagreen';
+          form.reset();
+          if (iti) iti.setNumber('');
+
+          // 3. Open WhatsApp in current tab (avoids new empty tab)
+          window.location.href = waUrl;
+          
+          return; 
+        }
+
+        // Telegram Action
         if (btn) { btn.disabled = true; btn.style.opacity = '.7'; }
         msg.textContent = 'Отправка...';
         msg.style.color = 'inherit';
@@ -598,8 +653,8 @@ document.addEventListener('DOMContentLoaded', () => {
             msg.style.color = 'crimson';
           }
         }).catch(() => {
-          msg.textContent = 'Ошибка сети. Повторите позже.';
-          msg.style.color = 'crimson';
+           msg.textContent = 'Ошибка сети. Повторите позже.';
+           msg.style.color = 'crimson';
         }).finally(() => {
           if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
         });

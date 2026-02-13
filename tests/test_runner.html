@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Phone Mask Auto-Tests</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/css/intlTelInput.css">
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test-container { margin-top: 20px; }
+        .log { background: #f4f4f4; padding: 10px; border: 1px solid #ddd; height: 300px; overflow-y: scroll; font-family: monospace; }
+        .pass { color: green; }
+        .fail { color: red; font-weight: bold; }
+        .summary { margin-top: 10px; font-weight: bold; font-size: 1.2em; }
+        /* Hide the actual form, we just need it for script.js to attach */
+        #feedback-form { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; }
+        .controls { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>Phone Mask Automation Tests</h1>
+    
+    <div class="controls">
+        <button id="runTestsBtn" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Run All Country Tests</button>
+        <div id="progress">Ready to run.</div>
+    </div>
+
+    <!-- Elements required by script.js -->
+    <div id="feedback-form-container">
+        <h3>Live Form (Controlled by Test)</h3>
+        <form id="feedback-form">
+            <div>
+                <label>Name: <input type="text" id="name"></label>
+            </div>
+            <div>
+                <label>Phone: <input type="tel" id="phone"></label>
+            </div>
+            <div>
+                <label>Comment: <textarea id="comment"></textarea></label>
+            </div>
+            <div id="form-msg"></div>
+        </form>
+    </div>
+
+    <div class="test-container">
+        <h3>Test Log</h3>
+        <div id="testLog" class="log"></div>
+        <div id="summary" class="summary"></div>
+    </div>
+
+    <!-- Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/intlTelInput.min.js"></script>
+    
+    <!-- Load main script (adjust path from tests/ to assets/) -->
+    <script src="../assets/script.js?v=7"></script>
+
+    <script>
+        const logEl = document.getElementById('testLog');
+        const summaryEl = document.getElementById('summary');
+        const progressEl = document.getElementById('progress');
+        const phoneInput = document.getElementById('phone');
+
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.textContent = msg;
+            if (type === 'pass') div.className = 'pass';
+            if (type === 'fail') div.className = 'fail';
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        async function runTests() {
+            logEl.innerHTML = '';
+            summaryEl.textContent = '';
+            
+            // Wait for script.js to initialize (it runs on DOMContentLoaded)
+            // But we are running after load usually.
+            // Check if intlTelInput is initialized.
+            // In script.js it initializes on DOMContentLoaded.
+            
+            const iti = window.intlTelInputGlobals.getInstance(phoneInput);
+            if (!iti) {
+                log('Error: IntlTelInput instance not found. Is script.js loaded?', 'fail');
+                return;
+            }
+
+            const countries = window.intlTelInputGlobals.getCountryData();
+            log(`Found ${countries.length} countries to test.`);
+
+            let passed = 0;
+            let failed = 0;
+
+            for (let i = 0; i < countries.length; i++) {
+                const country = countries[i];
+                progressEl.textContent = `Testing ${i+1}/${countries.length}: ${country.name} (${country.iso2})`;
+                
+                try {
+                    // 1. Set Country
+                    iti.setCountry(country.iso2);
+                    
+                    // 2. Get Placeholder (Mask)
+                    const placeholder = phoneInput.getAttribute('placeholder');
+                    
+                    // 3. Determine expected behavior
+                    // If placeholder has digits, we expect strict masking.
+                    // If not, we expect loose length limit (15).
+                    
+                    const hasMask = placeholder && /\d/.test(placeholder);
+                    
+                    // Generate input: just a long string of digits
+                    const inputDigits = "12345678901234567890"; // 20 digits
+                    
+                    // Simulate user typing
+                    // Note: script.js listens to 'input' event.
+                    // We must update value and dispatch event.
+                    
+                    // We need to simulate typing digit by digit to test the mask logic thoroughly?
+                    // Or just set the full value and trigger input?
+                    // The mask logic in script.js iterates over placeholder and maps input digits.
+                    // It takes `phoneInput.value`, strips non-digits, and re-builds.
+                    // So setting full value and triggering input once is enough to test the transformation.
+                    
+                    phoneInput.value = inputDigits;
+                    phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    const resultValue = phoneInput.value;
+                    const resultDigits = resultValue.replace(/\D/g, '');
+                    
+                    let error = null;
+
+                    if (hasMask) {
+                        // Strict Mask Mode
+                        // Expected: Result should match the placeholder structure filled with "123..."
+                        // Let's emulate the expected result to compare.
+                        let expected = "";
+                        let dIdx = 0;
+                        const rawInput = inputDigits; // 20 digits
+                        
+                        for (let k = 0; k < placeholder.length; k++) {
+                            const ch = placeholder[k];
+                            if (/\d/.test(ch)) {
+                                if (dIdx < rawInput.length) {
+                                    expected += rawInput[dIdx++]; // We use input digits sequentially
+                                } else {
+                                    break;
+                                }
+                            } else {
+                                // Separator
+                                // My script logic: include separator if followed by digit (or end of logic)
+                                // In strict mask, we stop when placeholder ends or input ends.
+                                // If we have more digits in input, we stop at placeholder end.
+                                // If input runs out, we stop.
+                                if (dIdx < rawInput.length) { // We have more digits to fill?
+                                     expected += ch;
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Check strict equality
+                        if (resultValue !== expected) {
+                            error = `Expected '${expected}', got '${resultValue}' (Placeholder: ${placeholder})`;
+                        }
+                        
+                        // Also check if resultDigits count matches placeholder digits count
+                        const placeholderDigits = placeholder.replace(/\D/g, '').length;
+                        if (resultDigits.length !== placeholderDigits) {
+                            // Edge case: inputDigits might be shorter than placeholder? No, we provided 20.
+                            // So result should fill the mask.
+                            if (resultDigits.length < placeholderDigits) {
+                                // Maybe input was too short? No.
+                                // Maybe mask logic cut it off early?
+                            }
+                        }
+
+                    } else {
+                        // Loose Mode (max 15 digits)
+                        // Expected: first 15 digits of input
+                        if (resultDigits.length > 15) {
+                            error = `Expected max 15 digits, got ${resultDigits.length}`;
+                        }
+                    }
+
+                    // Check Validation
+                    // Since we filled with "12345...", it might not be a valid number for that country (invalid prefix/length).
+                    // So iti.isValidNumber() might be false.
+                    // We mainly test the *Masking* logic here.
+                    // But we can check if it *looks* like the mask.
+
+                    if (error) {
+                        log(`[FAIL] ${country.name} (${country.iso2}): ${error}`, 'fail');
+                        failed++;
+                    } else {
+                        // log(`[PASS] ${country.name}`, 'pass'); // Optional: don't log every pass to keep clean
+                        passed++;
+                    }
+
+                    // Small delay to let UI render if needed (optional)
+                    // await new Promise(r => setTimeout(r, 0));
+
+                } catch (e) {
+                    log(`[ERR] ${country.name}: ${e.message}`, 'fail');
+                    failed++;
+                }
+            }
+
+            progressEl.textContent = 'Done.';
+            summaryEl.textContent = `Total: ${countries.length}. Passed: ${passed}. Failed: ${failed}.`;
+            if (failed === 0) {
+                summaryEl.style.color = 'green';
+                log('All tests passed!', 'pass');
+            } else {
+                summaryEl.style.color = 'red';
+            }
+        }
+
+        document.getElementById('runTestsBtn').addEventListener('click', runTests);
+        
+        // Auto-run if query param present
+        if (new URLSearchParams(location.search).has('auto')) {
+            window.addEventListener('load', runTests);
+        }
+    </script>
+</body>
+</html>

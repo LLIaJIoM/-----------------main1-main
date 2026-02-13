@@ -119,6 +119,7 @@ class Handler(SimpleHTTPRequestHandler):
         phone_country = str(data.get("phone_country", "")).strip()
         phone_iso2 = str(data.get("phone_iso2", "")).strip()
         phone_dial_code = str(data.get("phone_dial_code", "")).strip()
+        source = str(data.get("source", "Сайт")).strip() or "Сайт"
         phone_norm = normalize_phone(phone)
         if not name or not phone:
             self.send_response(400)
@@ -179,7 +180,7 @@ class Handler(SimpleHTTPRequestHandler):
                 now = datetime.now()
                 parts.extend([
                     f"Комментарий: {esc(comment)}\n",
-                    f"Источник: Сайт\n",
+                    f"Источник: {esc(source)}\n",
                     f"Дата: {now.strftime('%d.%m.%Y')}\n",
                     f"Время: {now.strftime('%H:%M:%S')}"
                 ])
