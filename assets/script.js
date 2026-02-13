@@ -15,11 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
     setExpanded(false);
     navToggle.addEventListener('click', () => {
       const open = nav.classList.toggle('open');
+      navToggle.classList.toggle('open', open);
       setExpanded(open);
     });
     nav.querySelectorAll('a').forEach(a => {
       a.addEventListener('click', () => {
         nav.classList.remove('open');
+        navToggle.classList.remove('open');
         setExpanded(false);
       });
     });

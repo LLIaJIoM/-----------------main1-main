@@ -66,3 +66,6 @@ class MessageCountryTests(unittest.TestCase):
         self.assertIn("Страна: Россия", text)
         self.assertIn("Комментарий: 0", text)
         self.assertIn("Источник: Сайт", text)
+
+    def test_country_from_phone_country_field(self):
+        self.assertEqual(server._country_display("+123", "xx", "Custom", ""), "Custom")

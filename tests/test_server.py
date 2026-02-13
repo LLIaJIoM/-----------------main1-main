@@ -3,6 +3,7 @@ import time
 import json
 import http.client
 import unittest
+import os
 from unittest.mock import patch
 from http.server import HTTPServer
 import server
@@ -99,3 +100,10 @@ class ServerTestCase(unittest.TestCase):
         self.assertEqual(resp.status, 200)
         obj = json.loads(data.decode("utf-8"))
         self.assertTrue(obj["ok"])
+
+    def test_translate_path_returns_string(self):
+        handler = server.Handler.__new__(server.Handler)
+        handler.directory = os.getcwd()
+        result = server.Handler.translate_path(handler, "/")
+        self.assertTrue(isinstance(result, str))
+        self.assertNotEqual(result, "")

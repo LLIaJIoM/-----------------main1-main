@@ -38,5 +38,3 @@ class TestInternationalPhones(unittest.TestCase):
         self.assertEqual(normalize_phone("89991234567"), "+79991234567")
         self.assertEqual(normalize_phone("+79991234567"), "+79991234567")
 
-if __name__ == "__main__":
-    unittest.main()
