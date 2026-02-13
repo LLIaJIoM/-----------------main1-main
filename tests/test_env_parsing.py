@@ -52,6 +52,16 @@ class EnvParsingTests(unittest.TestCase):
                 self.assertIsNone(server.CERT_PATH)
                 self.assertIsNone(server.certifi)
 
+    def test_config_json_parsing(self):
+        cfg = '{"TELEGRAM_BOT_TOKEN": "bt", "TELEGRAM_CHAT_ID": "cid", "TELEGRAM_CHAT_IDS": ["1", "2"]}'
+        with patch("builtins.open", mock_open(read_data=cfg)):
+            with patch.dict(os.environ, {}, clear=True):
+                import server
+                importlib.reload(server)
+                self.assertEqual(server.BOT_TOKEN, "bt")
+                self.assertEqual(server.CHAT_ID, "cid")
+                self.assertEqual(server.CHAT_IDS, ["1", "2"])
+
     def test_main_reads_env_and_runs(self):
         import http.server
         calls = {"serve": 0, "close": 0, "chdir": 0}
