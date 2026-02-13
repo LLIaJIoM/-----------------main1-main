@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const qs = new URLSearchParams(location.search);
     isLite = qs.get('lite') === '1';
   } catch (e) {}
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   const navToggle = document.querySelector('.nav-toggle');
   const nav = document.querySelector('.nav');
@@ -479,7 +480,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const itiContainer = phoneInput.closest('.iti');
             if (itiContainer) itiContainer.style.borderColor = 'crimson';
         }
-        el.focus();
+        if (!isIOS) {
+          el.focus();
+        } else {
+          const active = document.activeElement;
+          if (active && active !== document.body) active.blur();
+        }
     }
   };
 
@@ -730,21 +736,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const aboutSection = document.getElementById('about');
       if (aboutSection) {
-        // Calculate offset based on header height
         const header = document.querySelector('.site-header');
         const headerHeight = header ? header.offsetHeight : 0;
         const elementPosition = aboutSection.getBoundingClientRect().top + window.scrollY;
         const offsetPosition = elementPosition - headerHeight - 20;
+        const behavior = isIOS ? 'auto' : 'smooth';
 
         window.scrollTo({
           top: offsetPosition,
-          behavior: 'smooth'
+          behavior
         });
-        
-        // Update URL hash
+        if (isIOS) {
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: offsetPosition, behavior: 'auto' });
+          });
+        }
+
         history.pushState(null, null, '#about');
       } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: isIOS ? 'auto' : 'smooth' });
       }
     });
   }
