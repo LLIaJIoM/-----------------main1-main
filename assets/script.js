@@ -35,6 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = a.getAttribute('href').slice(1);
     if (id) navLinkMap.set(id, a);
   });
+  const phoneLink = document.querySelector('.phone-link');
+  if (phoneLink) {
+    phoneLink.addEventListener('click', () => {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('phone_call', '1');
+        window.history.replaceState(null, '', url.toString());
+      } catch (e) {}
+    });
+  }
   navLinks.forEach(a => {
     a.addEventListener('click', e => {
       e.preventDefault();
