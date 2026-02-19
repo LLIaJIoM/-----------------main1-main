@@ -233,12 +233,11 @@ class Handler(SimpleHTTPRequestHandler):
                     "phone_dial_code": phone_dial_code,
                     "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 }
-                p = os.path.join(ROOT_DIR, "assets", "requests.log")
-                os.makedirs(os.path.dirname(p), exist_ok=True)
+                p = os.path.join(ROOT_DIR, "requests.log")
                 with open(p, "a", encoding="utf-8") as f:
                     f.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 ok = True
-                info = {"stored": "assets/requests.log"}
+                info = {"stored": "requests.log"}
             except Exception as e:
                 err = str(e) or "env_missing"
         if not ok:
