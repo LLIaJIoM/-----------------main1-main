@@ -98,6 +98,21 @@ class Handler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
         full = super().translate_path(path)
         return full
+    def do_GET(self):
+        if self.path == "/api/reviews":
+            payload = []
+            try:
+                p = os.path.join(ROOT_DIR, "reviews.json")
+                with open(p, "r", encoding="utf-8") as f:
+                    payload = json.load(f)
+            except Exception:
+                payload = []
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+            return
+        return super().do_GET()
 
     def do_POST(self):
         if self.path != "/api/telegram":

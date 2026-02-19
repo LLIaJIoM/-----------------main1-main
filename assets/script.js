@@ -68,6 +68,80 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  const reviews = [
+    {
+      name: 'Клиент',
+      rating: 5,
+      text: 'Ребята знают свое дело. Приехали оперативно. Проблему решили. Планирую при необходимости обратиться вновь.',
+      date: '14 февраля',
+      source: 'Avito'
+    },
+    {
+      name: 'Клиент',
+      rating: 5,
+      text: 'Всё супер',
+      date: '13 февраля',
+      source: 'Avito'
+    },
+    {
+      name: 'Клиент',
+      rating: 5,
+      text: 'Рекомендую!',
+      date: '12 февраля',
+      source: 'Avito'
+    },
+    {
+      name: 'Олег',
+      rating: 1,
+      text: 'Не рекомендую! Все начиналось хорошо, но, исполнитель воспользовался моим полным незнанием газголдера и вообще всей системы, срубил 40k все подключил и не предупредил, что вообще так нельзя было подключать.((( В итоге система встала.',
+      date: '29 января',
+      source: 'Avito'
+    }
+  ];
+  const reviewsList = document.getElementById('reviews-list');
+  const stars = rating => '★'.repeat(Math.max(0, Math.min(5, rating))) + '☆'.repeat(Math.max(0, 5 - Math.min(5, rating)));
+  const renderReviews = list => {
+    if (!reviewsList) return;
+    const sorted = [...list].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    reviewsList.innerHTML = '';
+    sorted.forEach(item => {
+      const card = document.createElement('article');
+      card.className = 'card review-card';
+      const header = document.createElement('div');
+      header.className = 'review-header';
+      const name = document.createElement('div');
+      name.className = 'review-name';
+      name.textContent = item.name || 'Клиент';
+      const rating = document.createElement('div');
+      rating.className = 'review-rating';
+      const ratingValue = Number.isFinite(item.rating) ? item.rating : 0;
+      rating.textContent = stars(ratingValue);
+      rating.setAttribute('aria-label', `Оценка ${ratingValue} из 5`);
+      header.append(name, rating);
+      const text = document.createElement('div');
+      text.className = 'review-text';
+      text.textContent = item.text || '';
+      const footer = document.createElement('div');
+      footer.className = 'review-footer';
+      const date = document.createElement('span');
+      date.textContent = item.date || '';
+      const source = document.createElement('span');
+      source.textContent = item.source || 'Avito';
+      footer.append(date, source);
+      card.append(header, text, footer);
+      reviewsList.appendChild(card);
+    });
+  };
+  renderReviews(reviews);
+  if (reviewsList) {
+    fetch('/api/reviews', { cache: 'no-store' })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (Array.isArray(data) && data.length) renderReviews(data);
+      })
+      .catch(() => {});
+  }
+
   const items = document.querySelectorAll('.accordion-item');
   items.forEach((item, idx) => {
     const btn = item.querySelector('.accordion-btn');

@@ -30,6 +30,10 @@ class ServerTestCase(unittest.TestCase):
         body = json.dumps(payload).encode("utf-8")
         conn.request("POST", "/api/telegram", body, {"Content-Type": "application/json"})
         return conn.getresponse()
+    def _get(self, path):
+        conn = http.client.HTTPConnection(self.addr, self.port, timeout=5)
+        conn.request("GET", path)
+        return conn.getresponse()
 
     def test_missing_fields_returns_400(self):
         server.BOT_TOKEN = None
@@ -107,3 +111,35 @@ class ServerTestCase(unittest.TestCase):
         result = server.Handler.translate_path(handler, "/")
         self.assertTrue(isinstance(result, str))
         self.assertNotEqual(result, "")
+    def test_reviews_api_returns_data(self):
+        path = os.path.join(server.ROOT_DIR, "reviews.json")
+        data = [
+            {"name": "A", "rating": 5, "text": "t", "date": "d", "source": "Avito"},
+            {"name": "B", "rating": 4, "text": "t2", "date": "d2", "source": "Avito"}
+        ]
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False)
+            resp = self._get("/api/reviews")
+            body = resp.read()
+            self.assertEqual(resp.status, 200)
+            obj = json.loads(body.decode("utf-8"))
+            self.assertEqual(obj, data)
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
+    def test_reviews_api_empty_when_missing(self):
+        path = os.path.join(server.ROOT_DIR, "reviews.json")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("[]")
+        if os.path.exists(path):
+            os.remove(path)
+        resp = self._get("/api/reviews")
+        body = resp.read()
+        self.assertEqual(resp.status, 200)
+        obj = json.loads(body.decode("utf-8"))
+        self.assertEqual(obj, [])
+    def test_static_get_root(self):
+        resp = self._get("/")
+        resp.read()
+        self.assertEqual(resp.status, 200)
