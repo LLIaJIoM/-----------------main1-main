@@ -115,7 +115,7 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if self.path != "/api/telegram":
+        if self.path not in ("/api/telegram", "/api/phone-interest"):
             self.send_response(404)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
@@ -127,6 +127,98 @@ class Handler(SimpleHTTPRequestHandler):
             data = json.loads(body.decode("utf-8"))
         except Exception:
             data = {}
+        if self.path == "/api/phone-interest":
+            page = str(data.get("page", "")).strip()
+            phone = str(data.get("phone", "")).strip()
+            source = str(data.get("source", "Сайт")).strip() or "Сайт"
+            ok = False
+            err = None
+            info = None
+            recipients = []
+            if CHAT_ID:
+                recipients.append(CHAT_ID)
+            if isinstance(CHAT_IDS, list) and CHAT_IDS:
+                for x in CHAT_IDS:
+                    if x:
+                        recipients.append(x)
+            dedup = []
+            seen = set()
+            for x in recipients:
+                if x not in seen:
+                    dedup.append(x)
+                    seen.add(x)
+            recipients = dedup
+            if BOT_TOKEN and recipients:
+                try:
+                    now = datetime.now()
+                    parts = [
+                        f"<b>Интерес к телефону</b>\n",
+                        f"Телефон: {esc(phone) if phone else 'Не указан'}\n",
+                        f"Страница: {esc(page) if page else 'Не указана'}\n",
+                        f"Источник: {esc(source)}\n",
+                        f"Дата: {now.strftime('%d.%m.%Y')}\n",
+                        f"Время: {now.strftime('%H:%M:%S')}"
+                    ]
+                    text = "".join(parts)
+                    success = []
+                    last_err = None
+                    last_info = None
+                    for cid in recipients:
+                        params = urllib.parse.urlencode({
+                            "chat_id": cid,
+                            "text": text,
+                            "parse_mode": "HTML"
+                        }).encode("utf-8")
+                        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+                        req = urllib.request.Request(url, data=params, method="POST")
+                        try:
+                            if CERT_PATH:
+                                ctx = ssl.create_default_context(cafile=CERT_PATH)
+                            else:
+                                ctx = ssl.create_default_context()
+                            with urllib.request.urlopen(req, timeout=10, context=ctx) as resp:
+                                payload = resp.read()
+                            if CERT_PATH:
+                                last_info = {"certifi": True}
+                        except ssl.SSLError:
+                            ctx2 = ssl._create_unverified_context()
+                            with urllib.request.urlopen(req, timeout=10, context=ctx2) as resp:
+                                payload = resp.read()
+                            last_info = {"tls_unverified": True}
+                        res = json.loads(payload.decode("utf-8"))
+                        if bool(res.get("ok")):
+                            success.append(cid)
+                        else:
+                            last_err = res.get("description") or "telegram_error"
+                            last_info = res
+                    ok = len(success) > 0
+                    err = None if ok else last_err
+                    info = {"sent_to": success} if ok else last_info
+                except Exception as e:
+                    err = str(e)
+            else:
+                try:
+                    rec = {
+                        "event": "phone_interest",
+                        "phone": phone,
+                        "page": page,
+                        "source": source,
+                        "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    }
+                    p = os.path.join(ROOT_DIR, "requests.log")
+                    with open(p, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                    ok = True
+                    info = {"stored": "requests.log"}
+                except Exception as e:
+                    err = str(e) or "env_missing"
+            if not ok:
+                print(f"[telegram] send failed: {err}")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": ok, "error": err, "info": info}).encode("utf-8"))
+            return
         name = str(data.get("name", "")).strip()
         phone = str(data.get("phone", "")).strip()
         comment = str(data.get("comment", "")).strip()

@@ -30,6 +30,11 @@ class ServerTestCase(unittest.TestCase):
         body = json.dumps(payload).encode("utf-8")
         conn.request("POST", "/api/telegram", body, {"Content-Type": "application/json"})
         return conn.getresponse()
+    def _post_phone(self, payload):
+        conn = http.client.HTTPConnection(self.addr, self.port, timeout=5)
+        body = json.dumps(payload).encode("utf-8")
+        conn.request("POST", "/api/phone-interest", body, {"Content-Type": "application/json"})
+        return conn.getresponse()
     def _get(self, path):
         conn = http.client.HTTPConnection(self.addr, self.port, timeout=5)
         conn.request("GET", path)
@@ -139,6 +144,121 @@ class ServerTestCase(unittest.TestCase):
         self.assertEqual(resp.status, 200)
         obj = json.loads(body.decode("utf-8"))
         self.assertEqual(obj, [])
+    def test_phone_interest_falls_back_to_local_store(self):
+        server.BOT_TOKEN = None
+        server.CHAT_ID = None
+        path = os.path.join(server.ROOT_DIR, "requests.log")
+        if os.path.exists(path):
+            os.remove(path)
+        resp = self._post_phone({"page": "http://example.com", "phone": "tel:+79990000000"})
+        data = resp.read()
+        self.assertEqual(resp.status, 200)
+        obj = json.loads(data.decode("utf-8"))
+        self.assertTrue(obj["ok"])
+        self.assertIsNone(obj["error"])
+        self.assertTrue(os.path.exists(path))
+        if os.path.exists(path):
+            os.remove(path)
+    def test_phone_interest_send_returns_ok_true(self):
+        server.BOT_TOKEN = "x"
+        server.CHAT_ID = "123"
+        def fake_urlopen(req, timeout=10, context=None):
+            class R:
+                def __enter__(self):
+                    return self
+                def __exit__(self, exc_type, exc, tb):
+                    return False
+                def read(self):
+                    return b'{"ok": true, "result": {}}'
+            return R()
+        with patch("server.urllib.request.urlopen", fake_urlopen):
+            resp = self._post_phone({"page": "http://example.com", "phone": "tel:+79990000000"})
+            data = resp.read()
+            self.assertEqual(resp.status, 200)
+            obj = json.loads(data.decode("utf-8"))
+            self.assertTrue(obj["ok"])
+            self.assertIsNone(obj["error"])
+    def test_phone_interest_send_with_cert_path_sets_info(self):
+        server.BOT_TOKEN = "x"
+        server.CHAT_ID = "123"
+        server.CERT_PATH = "cert.pem"
+        def fake_urlopen(req, timeout=10, context=None):
+            class R:
+                def __enter__(self):
+                    return self
+                def __exit__(self, exc_type, exc, tb):
+                    return False
+                def read(self):
+                    return b'{"ok": true, "result": {}}'
+            return R()
+        with patch("server.ssl.create_default_context", lambda cafile=None: object()):
+            with patch("server.urllib.request.urlopen", fake_urlopen):
+                resp = self._post_phone({"page": "http://example.com", "phone": "tel:+79990000000"})
+                data = resp.read()
+                self.assertEqual(resp.status, 200)
+                obj = json.loads(data.decode("utf-8"))
+                self.assertTrue(obj["ok"])
+        server.CERT_PATH = None
+    def test_phone_interest_ssl_error_uses_unverified_context(self):
+        server.BOT_TOKEN = "x"
+        server.CHAT_ID = "123"
+        calls = {"count": 0}
+        def fake_urlopen(req, timeout=10, context=None):
+            if calls["count"] == 0:
+                calls["count"] += 1
+                raise server.ssl.SSLError("fail")
+            class R:
+                def __enter__(self):
+                    return self
+                def __exit__(self, exc_type, exc, tb):
+                    return False
+                def read(self):
+                    return b'{"ok": true, "result": {}}'
+            return R()
+        with patch("server.urllib.request.urlopen", fake_urlopen):
+            resp = self._post_phone({"page": "http://example.com", "phone": "tel:+79990000000"})
+            data = resp.read()
+            self.assertEqual(resp.status, 200)
+            obj = json.loads(data.decode("utf-8"))
+            self.assertTrue(obj["ok"])
+    def test_phone_interest_send_error_response(self):
+        server.BOT_TOKEN = "x"
+        server.CHAT_ID = "123"
+        def fake_urlopen(req, timeout=10, context=None):
+            class R:
+                def __enter__(self):
+                    return self
+                def __exit__(self, exc_type, exc, tb):
+                    return False
+                def read(self):
+                    return b'{"ok": false, "description": "fail"}'
+            return R()
+        with patch("server.urllib.request.urlopen", fake_urlopen):
+            resp = self._post_phone({"page": "http://example.com", "phone": "tel:+79990000000"})
+            data = resp.read()
+            self.assertEqual(resp.status, 200)
+            obj = json.loads(data.decode("utf-8"))
+            self.assertFalse(obj["ok"])
+    def test_phone_interest_send_exception_sets_error(self):
+        server.BOT_TOKEN = "x"
+        server.CHAT_ID = "123"
+        def fake_urlopen(req, timeout=10, context=None):
+            raise RuntimeError("boom")
+        with patch("server.urllib.request.urlopen", fake_urlopen):
+            resp = self._post_phone({"page": "http://example.com", "phone": "tel:+79990000000"})
+            data = resp.read()
+            self.assertEqual(resp.status, 200)
+            obj = json.loads(data.decode("utf-8"))
+            self.assertFalse(obj["ok"])
+    def test_phone_interest_log_write_error(self):
+        server.BOT_TOKEN = None
+        server.CHAT_ID = None
+        with patch("builtins.open", side_effect=OSError("nope")):
+            resp = self._post_phone({"page": "http://example.com", "phone": "tel:+79990000000"})
+            data = resp.read()
+            self.assertEqual(resp.status, 200)
+            obj = json.loads(data.decode("utf-8"))
+            self.assertFalse(obj["ok"])
     def test_static_get_root(self):
         resp = self._get("/")
         resp.read()

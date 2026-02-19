@@ -40,6 +40,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (phoneLink) {
     phoneLink.addEventListener('click', () => {
       try {
+        const payload = {
+          phone: phoneLink.getAttribute('href') || '',
+          page: window.location.href,
+          source: 'Сайт'
+        };
+        fetch('/api/phone-interest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true
+        }).catch(() => {});
+      } catch (e) {}
+      try {
         const url = new URL(window.location.href);
         url.searchParams.set('phone_call', '1');
         window.history.replaceState(null, '', url.toString());
