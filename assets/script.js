@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = a.getAttribute('href').slice(1);
     if (id) navLinkMap.set(id, a);
   });
+  let suppressSpyUntil = 0;
   const phoneLink = document.querySelector('.phone-link');
   if (phoneLink) {
     phoneLink.addEventListener('click', () => {
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const el = document.getElementById(id);
       if (el) {
         history.pushState(null, null, '#' + id);
+        suppressSpyUntil = Date.now() + 1200;
         
         const header = document.querySelector('.site-header');
         const headerHeight = header ? header.offsetHeight : 0;
@@ -64,6 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
           top: offsetPosition,
           behavior: 'smooth'
         });
+        navMenuLinks.forEach(link => {
+          link.classList.remove('active');
+          link.removeAttribute('aria-current');
+        });
+        const activeLink = navLinkMap.get(id);
+        if (activeLink) {
+          activeLink.classList.add('active');
+          activeLink.setAttribute('aria-current', 'page');
+        }
       }
     });
   });
@@ -675,6 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const spyObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
+        if (Date.now() < suppressSpyUntil) return;
         const id = entry.target.getAttribute('id');
         if (id) {
           // Use replaceState to update URL without adding to history stack
