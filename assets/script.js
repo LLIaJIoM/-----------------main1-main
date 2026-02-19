@@ -79,36 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  const reviews = [
-    {
-      name: 'Клиент',
-      rating: 5,
-      text: 'Ребята знают свое дело. Приехали оперативно. Проблему решили. Планирую при необходимости обратиться вновь.',
-      date: '14 февраля',
-      source: 'Avito'
-    },
-    {
-      name: 'Клиент',
-      rating: 5,
-      text: 'Всё супер',
-      date: '13 февраля',
-      source: 'Avito'
-    },
-    {
-      name: 'Клиент',
-      rating: 5,
-      text: 'Рекомендую!',
-      date: '12 февраля',
-      source: 'Avito'
-    },
-    {
-      name: 'Олег',
-      rating: 1,
-      text: 'Не рекомендую! Все начиналось хорошо, но, исполнитель воспользовался моим полным незнанием газголдера и вообще всей системы, срубил 40k все подключил и не предупредил, что вообще так нельзя было подключать.((( В итоге система встала.',
-      date: '29 января',
-      source: 'Avito'
-    }
-  ];
   const reviewsList = document.getElementById('reviews-list');
   const stars = rating => '★'.repeat(Math.max(0, Math.min(5, rating))) + '☆'.repeat(Math.max(0, 5 - Math.min(5, rating)));
   const renderReviews = list => {
@@ -143,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
       reviewsList.appendChild(card);
     });
   };
-  renderReviews(reviews);
   if (reviewsList) {
     const reviewsUrl = `/assets/reviews.json?v=${Date.now()}`;
     fetch(reviewsUrl, { cache: 'no-store' })
