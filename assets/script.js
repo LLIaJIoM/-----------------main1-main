@@ -724,21 +724,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const headerHeight = header ? header.offsetHeight : 0;
         const elementPosition = aboutSection.getBoundingClientRect().top + window.scrollY;
         const offsetPosition = elementPosition - headerHeight - 20;
-        const behavior = isIOS ? 'auto' : 'smooth';
+        const behavior = 'smooth';
 
         window.scrollTo({
           top: offsetPosition,
           behavior
         });
-        if (isIOS) {
-          requestAnimationFrame(() => {
-            window.scrollTo({ top: offsetPosition, behavior: 'auto' });
-          });
-        }
-
         history.pushState(null, null, '#about');
       } else {
-        window.scrollTo({ top: 0, behavior: isIOS ? 'auto' : 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     });
   }
