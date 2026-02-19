@@ -127,7 +127,9 @@ body.modal-open { overflow: hidden; }
   right: 24px;
   width: 48px;
   height: 48px;
-  background: var(--accent);
+  --scroll-progress: 0%;
+  --back-fill: var(--accent);
+  background: conic-gradient(var(--accent-2) var(--scroll-progress), rgba(255,255,255,.2) 0);
   color: #fff;
   border-radius: 50%;
   display: flex;
@@ -142,13 +144,24 @@ body.modal-open { overflow: hidden; }
   border: none;
   font-size: 24px;
 }
+.back-to-top::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  background: var(--back-fill);
+  border-radius: 50%;
+}
+.back-to-top > * {
+  position: relative;
+  z-index: 1;
+}
 .back-to-top.show {
   opacity: 1;
   visibility: visible;
 }
 .back-to-top:hover {
   transform: translateY(-4px);
-  background: var(--accent-2);
+  --back-fill: var(--accent-2);
 }
 
 /* Scroll Animations */

@@ -178,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     lightbox.addEventListener('click', closeLightbox);
     inner.addEventListener('click', e => e.stopPropagation());
+    fullImg.addEventListener('click', closeLightbox);
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') closeLightbox();
     });
@@ -686,13 +687,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Back to Top Logic
   const backToTopBtn = document.getElementById('backToTop');
   if (backToTopBtn) {
-    window.addEventListener('scroll', () => {
+    const updateBackToTop = () => {
       if (window.scrollY > 400) {
         backToTopBtn.classList.add('show');
       } else {
         backToTopBtn.classList.remove('show');
       }
-    });
+      const doc = document.documentElement;
+      const scrollable = Math.max(1, doc.scrollHeight - window.innerHeight);
+      const progress = Math.min(1, Math.max(0, window.scrollY / scrollable));
+      backToTopBtn.style.setProperty('--scroll-progress', `${Math.round(progress * 100)}%`);
+    };
+    updateBackToTop();
+    window.addEventListener('scroll', updateBackToTop);
     backToTopBtn.addEventListener('click', () => {
       const active = document.activeElement;
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
