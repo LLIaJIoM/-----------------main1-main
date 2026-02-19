@@ -145,7 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   renderReviews(reviews);
   if (reviewsList) {
-    fetch('/api/reviews', { cache: 'no-store' })
+    const reviewsUrl = `/assets/reviews.json?v=${Date.now()}`;
+    fetch(reviewsUrl, { cache: 'no-store' })
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
         if (Array.isArray(data) && data.length) renderReviews(data);
