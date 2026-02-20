@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
 Host: https://tepliy-dom.online
+Sitemap: https://tepliy-dom.online/sitemap.xml
