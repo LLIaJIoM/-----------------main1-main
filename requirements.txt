@@ -1,3 +1,4 @@
 certifi
+python-dotenv
 pytest
 pytest-cov

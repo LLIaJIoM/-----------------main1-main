@@ -5,6 +5,11 @@ import urllib.request
 import ssl
 import re
 try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+try:
     import certifi
     CERT_PATH = certifi.where()
 except Exception:
