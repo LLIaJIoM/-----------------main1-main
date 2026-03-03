@@ -387,6 +387,7 @@ body.modal-open { overflow: hidden; }
   border-top: 1px solid rgba(255,255,255,.06);
   padding-top: 20px; text-align: center; font-size: 13px;
   display: flex; flex-direction: column; gap: 4px; color: #4b5563;
+  word-break: break-word;
 }
 
 /* ─── Dropdown Navigation ─── */
@@ -586,7 +587,7 @@ body.modal-open { overflow: hidden; }
   .nav {
     display: flex; flex-direction: column;
     position: absolute; top: 100%; left: 12px; right: 12px;
-    background: rgba(17,19,24,.97);
+    background: rgb(17,19,24);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
     padding: 8px 0; z-index: 30;
     opacity: 0; visibility: hidden; transform: translateY(-8px);
@@ -660,6 +661,8 @@ body.modal-open { overflow: hidden; }
   .carousel-btn { width: 40px; height: 40px; font-size: 18px; }
   .carousel-btn.prev { left: 10px; }
   .carousel-btn.next { right: 10px; }
+  :root { --header-height: 140px; }
+  .back-to-top { width: 40px; height: 40px; bottom: 20px; right: 16px; font-size: 18px; }
 }
 
 @media (min-width: 1200px) {

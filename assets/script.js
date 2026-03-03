@@ -36,12 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (id) navLinkMap.set(id, a);
   });
   let suppressSpyUntil = 0;
-  const phoneLink = document.querySelector('.phone-link');
-  if (phoneLink) {
-    phoneLink.addEventListener('click', () => {
+  document.querySelectorAll('a[href^="tel:"]').forEach(link => {
+    link.addEventListener('click', () => {
       try {
         const payload = {
-          phone: phoneLink.getAttribute('href') || '',
+          phone: link.getAttribute('href') || '',
           page: window.location.href,
           source: 'Сайт'
         };
@@ -58,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.history.replaceState(null, '', url.toString());
       } catch (e) {}
     });
-  }
+  });
   navLinks.forEach(a => {
     a.addEventListener('click', e => {
       e.preventDefault();
