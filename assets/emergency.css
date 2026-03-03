@@ -6,7 +6,7 @@
   padding: 8px 0;
   width: 100%;
   position: relative;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .emergency-bar::before {
