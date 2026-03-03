@@ -312,7 +312,11 @@ document.addEventListener('DOMContentLoaded', () => {
           if (dx < 0) btnNext.click(); else btnPrev.click();
         }
       });
+      // Initial position WITHOUT transition to prevent visible scroll on page load
+      track.style.transition = 'none';
       update();
+      void track.offsetHeight; // force reflow
+      track.style.transition = '';
     };
     const initCarousel = async () => {
       const allPhotos = await getPortfolioList();
@@ -718,22 +722,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
         active.blur();
       }
-      const aboutSection = document.getElementById('about');
-      if (aboutSection) {
-        const header = document.querySelector('.site-header');
-        const headerHeight = header ? header.offsetHeight : 0;
-        const elementPosition = aboutSection.getBoundingClientRect().top + window.scrollY;
-        const offsetPosition = elementPosition - headerHeight - 20;
-        const behavior = 'smooth';
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior
-        });
-        history.pushState(null, null, '#about');
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 

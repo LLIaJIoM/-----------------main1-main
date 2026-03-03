@@ -17,6 +17,7 @@ except Exception:
     CERT_PATH = None
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 from datetime import datetime
+from pages import get_page
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -117,6 +118,20 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
             return
+
+        # Parse URL path (strip query string)
+        url_path = self.path.split("?")[0].split("#")[0]
+
+        # Try dynamic page routing
+        html, status = get_page(url_path)
+        if html is not None:
+            self.send_response(status)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(html.encode("utf-8"))
+            return
+
+        # Fall through to static file serving for assets, etc.
         return super().do_GET()
 
     def do_POST(self):
