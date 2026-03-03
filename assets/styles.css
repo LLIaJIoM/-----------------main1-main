@@ -607,11 +607,21 @@ body.modal-open { overflow: hidden; }
   .nav a:active { background: rgba(59,130,246,.1); }
   .nav-dropdown { width: 100%; }
   .nav-dropdown-menu {
-    position: static; transform: none;
-    opacity: 1; visibility: visible;
+    position: static; transform: none !important; left: auto;
     background: rgba(255,255,255,.02);
     border: none; border-radius: 0;
     box-shadow: none; padding: 0; min-width: auto;
+    max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+    transition: max-height .3s ease, opacity .2s ease, visibility .2s;
+  }
+  .nav-dropdown.open .nav-dropdown-menu {
+    max-height: 600px; opacity: 1; visibility: visible;
+  }
+  .nav-dropdown > a .nav-arrow {
+    transition: transform .25s ease;
+  }
+  .nav-dropdown.open > a .nav-arrow {
+    transform: rotate(180deg);
   }
   .nav-dropdown-menu a { padding-left: 44px; font-size: 14px; }
   .nav-dropdown-menu a:hover { padding-left: 44px; }
