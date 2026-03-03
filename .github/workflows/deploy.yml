@@ -22,7 +22,7 @@ jobs:
           cd /opt/tepliy-dom
 
           echo "=== Pulling latest code ==="
-          git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/LLIaJIoM/-----------------main1-main.git
+          git remote set-url origin https://github.com/LLIaJIoM/-----------------main1-main.git
           git fetch origin main
           git reset --hard origin/main
 
