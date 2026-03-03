@@ -208,7 +208,7 @@ def render_page(title, description, content, active_path="/", canonical=None, ke
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/css/intlTelInput.css">
-  <link rel="stylesheet" href="/assets/styles.css?v=3">
+  <link rel="stylesheet" href="/assets/styles.css?v=4">
   <link rel="stylesheet" href="/assets/emergency.css">
   <script type="text/javascript">
      (function(m,e,t,r,i,k,a){{
@@ -285,7 +285,7 @@ def render_page(title, description, content, active_path="/", canonical=None, ke
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/intlTelInput.min.js" defer></script>
-  <script src="/assets/script.js?v=10" defer></script>
+  <script src="/assets/script.js?v=11" defer></script>
   <button id="backToTop" class="back-to-top" aria-label="Наверх"><span>↑</span></button>
 </body>
 </html>'''
