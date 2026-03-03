@@ -44,11 +44,7 @@ if [ -d "$INSTALL_DIR/.git" ]; then
     cd "$INSTALL_DIR"
     git pull origin main || true
 else
-    read -rp "GitHub PAT (Personal Access Token): " GH_PAT
-    [[ -z "$GH_PAT" ]] && err "PAT обязателен для приватного репозитория"
-
-    AUTH_URL="https://${GH_PAT}@github.com/LLIaJIoM/-----------------main1-main.git"
-    git clone "$AUTH_URL" "$INSTALL_DIR"
+    git clone "$REPO_URL" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
     log "Репозиторий склонирован в $INSTALL_DIR"
 fi
