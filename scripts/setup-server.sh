@@ -51,7 +51,7 @@ fi
 
 # ── 4. Установка Python-зависимостей ─────────────────────
 log "Установка Python-зависимостей..."
-pip3 install -r requirements.txt --quiet 2>/dev/null || true
+pip3 install --break-system-packages -r requirements.txt --quiet 2>/dev/null || true
 
 # ── 5. Файл окружения (.env) ─────────────────────────────
 if [ ! -f "$INSTALL_DIR/.env" ]; then
