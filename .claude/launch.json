@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tepliy-dom",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["server.py"],
+      "port": 8000
+    },
+    {
+      "name": "watchdog",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["watchdog.py"],
+      "port": 8000
+    }
+  ]
+}
