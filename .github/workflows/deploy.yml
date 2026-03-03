@@ -17,7 +17,6 @@ jobs:
         username: root
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          set -e
           cd /opt/tepliy-dom
 
           echo "=== Pulling latest code ==="
@@ -28,15 +27,23 @@ jobs:
           echo "=== Installing dependencies ==="
           pip3 install -r requirements.txt --quiet 2>/dev/null || true
 
-          echo "=== Restarting service ==="
-          systemctl restart tepliy-dom
-          sleep 3
+          echo "=== Stopping service ==="
+          systemctl stop tepliy-dom || true
+          sleep 1
+
+          echo "=== Killing port 8000 ==="
+          fuser -k 8000/tcp 2>/dev/null || true
+          sleep 2
+
+          echo "=== Starting service ==="
+          systemctl start tepliy-dom
+          sleep 5
 
           echo "=== Checking health ==="
           if curl -sf http://127.0.0.1:8000/ > /dev/null 2>&1; then
-            echo "✅ Server is healthy"
+            echo "Server is healthy"
           else
-            echo "⚠️ Server may still be starting..."
+            echo "Server may still be starting..."
           fi
 
           echo "=== Service status ==="
