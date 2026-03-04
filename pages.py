@@ -90,9 +90,17 @@ def render_cta_block(title="Получить бесплатную диагнос
       <div class="container center">
         <h2>{title}</h2>
         <p class="lead">{subtitle}</p>
-        <div class="cta-buttons">
-          <a href="/contacts#feedback" class="btn btn-cta btn-lg">Вызвать мастера</a>
-          <a href="tel:{PHONE_RAW}" class="btn btn-outline-white btn-lg">📞 {PHONE}</a>
+        <form id="cta-form" class="cta-inline-form">
+          <div class="cta-form-row">
+            <input type="text" name="name" placeholder="Ваше имя" required maxlength="50" pattern="[A-Za-zА-Яа-яЁё\\s\\-]+" autocomplete="name">
+            <input type="tel" name="phone" placeholder="Телефон" required autocomplete="tel" inputmode="tel">
+            <button type="submit" class="btn btn-cta btn-lg">Вызвать мастера</button>
+          </div>
+          <div id="cta-form-msg" class="form-msg" role="status" aria-live="polite"></div>
+        </form>
+        <div class="cta-phone-alt">
+          <span>или позвоните:</span>
+          <a href="tel:{PHONE_RAW}" class="cta-phone-link">📞 {PHONE}</a>
         </div>
       </div>
     </section>'''
@@ -284,8 +292,11 @@ def render_page(title, description, content, active_path="/", canonical=None, ke
     </div>
   </footer>
 
+  <a href="https://wa.me/79296783656?text=%D0%97%D0%B4%D1%80%D0%B0%D0%B2%D1%81%D1%82%D0%B2%D1%83%D0%B9%D1%82%D0%B5!%20%D0%9D%D1%83%D0%B6%D0%BD%D0%B0%20%D0%BA%D0%BE%D0%BD%D1%81%D1%83%D0%BB%D1%8C%D1%82%D0%B0%D1%86%D0%B8%D1%8F." class="whatsapp-float" target="_blank" rel="noopener" aria-label="Написать в WhatsApp">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="#fff"><path d="M17.472 14.382c-.353-.177-2.087-1.029-2.411-1.147-.324-.117-.56-.176-.796.177-.236.353-.913 1.147-1.119 1.383-.206.236-.413.265-.766.088-.353-.176-1.489-.549-2.836-1.75-1.047-.933-1.754-2.085-1.96-2.438-.206-.353-.022-.544.155-.72.158-.158.353-.413.53-.619.177-.206.236-.353.353-.589.118-.236.059-.442-.029-.619-.088-.177-.796-1.927-1.091-2.639-.287-.687-.579-.594-.796-.604-.206-.009-.442-.012-.677-.012s-.619.088-.943.442c-.325.353-1.239 1.21-1.239 2.951s1.269 3.422 1.446 3.658c.177.236 2.498 3.812 6.05 5.345.846.364 1.505.581 2.02.744.849.266 1.621.228 2.231.138.68-.1 2.087-.854 2.382-1.679.295-.824.295-1.531.206-1.679-.088-.147-.324-.236-.677-.413zm-5.418 7.403h-.004c-1.77 0-3.513-.476-5.03-1.374l-.361-.214-3.741.981.998-3.648-.235-.374c-.99-1.574-1.513-3.393-1.513-5.26 0-5.45 4.436-9.884 9.889-9.884 2.64 0 5.122 1.03 6.988 2.898 1.866 1.869 2.893 4.352 2.892 6.993-.003 5.45-4.437 9.884-9.885 9.884zM20.52 3.449C18.24 1.226 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c-.001 2.096.547 4.142 1.588 5.946L.057 24l6.305-1.654c1.737.947 3.693 1.447 5.683 1.448h.005c6.585 0 11.946-5.336 11.949-11.896.002-3.176-1.234-6.165-3.479-8.449z"/></svg>
+  </a>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/intlTelInput.min.js" defer></script>
-  <script src="/assets/script.js?v=11" defer></script>
+  <script src="/assets/script.js?v=12" defer></script>
   <button id="backToTop" class="back-to-top" aria-label="Наверх"><span>↑</span></button>
 </body>
 </html>'''
@@ -1247,6 +1258,29 @@ def page_contacts():
     )
 
 
+def page_spasibo():
+    content = f'''
+    <section class="section section-blue" style="min-height:60vh;display:flex;align-items:center">
+      <div class="container center">
+        <div style="font-size:64px;margin-bottom:24px">✅</div>
+        <h1 style="font-size:clamp(28px,4vw,42px);margin-bottom:16px">Спасибо за заявку!</h1>
+        <p class="lead" style="max-width:500px;margin:0 auto 24px">Мы получили ваше обращение и свяжемся с вами в ближайшие 15 минут.</p>
+        <p style="opacity:.8;margin-bottom:32px">Если вопрос срочный — позвоните нам:</p>
+        <a href="tel:{PHONE_RAW}" class="btn btn-cta btn-lg" style="font-size:20px">📞 {PHONE}</a>
+        <div style="margin-top:32px">
+          <a href="/" style="color:#fff;opacity:.7;text-decoration:underline">← Вернуться на главную</a>
+        </div>
+      </div>
+    </section>
+    '''
+    return render_page(
+        title="Спасибо за заявку — Тёплый Дом",
+        description="Ваша заявка принята. Мы свяжемся с вами в ближайшие 15 минут.",
+        content=content,
+        active_path="/spasibo"
+    )
+
+
 # ─── URL ROUTING ────────────────────────────────────────────────────────
 
 def get_page(path):
@@ -1293,5 +1327,7 @@ def get_page(path):
         return page_about(), 200
     if path == "/contacts":
         return page_contacts(), 200
+    if path == "/spasibo":
+        return page_spasibo(), 200
 
     return None, 404

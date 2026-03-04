@@ -280,6 +280,42 @@ body.modal-open { overflow: hidden; }
 .back-to-top.show { opacity: 1; visibility: visible; }
 .back-to-top:hover { transform: translateY(-4px); --back-fill: var(--accent-2); }
 
+/* ─── CTA Inline Form ─── */
+.cta-inline-form { max-width: 680px; margin: 24px auto 0; }
+.cta-form-row {
+  display: flex; gap: 10px; align-items: stretch;
+}
+.cta-form-row input {
+  flex: 1; padding: 14px 18px; border-radius: var(--radius-sm);
+  border: 2px solid rgba(255,255,255,.3); background: rgba(255,255,255,.15);
+  color: #fff; font-size: 16px; outline: none; transition: border-color .2s;
+}
+.cta-form-row input::placeholder { color: rgba(255,255,255,.6); }
+.cta-form-row input:focus { border-color: #fff; background: rgba(255,255,255,.2); }
+.cta-form-row .btn { white-space: nowrap; flex-shrink: 0; }
+.cta-phone-alt {
+  margin-top: 16px; font-size: 15px; opacity: .85;
+}
+.cta-phone-link { color: #fff; font-weight: 600; text-decoration: underline; margin-left: 6px; }
+#cta-form-msg { margin-top: 10px; }
+
+/* ─── Floating WhatsApp Button ─── */
+.whatsapp-float {
+  position: fixed; bottom: 96px; right: 24px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #25d366; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(37,211,102,.4);
+  z-index: 899; transition: transform .2s, box-shadow .2s;
+}
+.whatsapp-float:hover { transform: scale(1.1); box-shadow: 0 6px 28px rgba(37,211,102,.5); }
+
+@media (max-width: 768px) {
+  .cta-form-row { flex-direction: column; }
+  .cta-form-row .btn { width: 100%; }
+  .whatsapp-float { bottom: 80px; right: 16px; width: 50px; height: 50px; }
+  .whatsapp-float svg { width: 24px; height: 24px; }
+}
+
 /* ─── Scroll Animations ─── */
 .fade-up {
   opacity: 0; transform: translateY(24px);

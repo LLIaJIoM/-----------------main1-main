@@ -670,11 +670,10 @@ document.addEventListener('DOMContentLoaded', () => {
           let data = {};
           try { data = await r.json(); } catch {}
           if (ok && data.ok) {
-            msg.textContent = 'Заявка отправлена. Мы свяжемся с вами.';
-            msg.style.color = 'seagreen';
             try { ym(106684335, 'reachGoal', 'form_submit'); } catch (e) {}
             form.reset();
-            if (iti) iti.setNumber(''); // Reset flags/input
+            if (iti) iti.setNumber('');
+            window.location.href = '/spasibo';
           } else {
             msg.textContent = 'Не удалось отправить. Попробуйте позже.';
             msg.style.color = 'crimson';
@@ -776,4 +775,48 @@ document.addEventListener('DOMContentLoaded', () => {
     el.classList.add('fade-up');
     observer.observe(el);
   });
+
+  // WhatsApp floating button tracking
+  const waFloat = document.querySelector('.whatsapp-float');
+  if (waFloat) {
+    waFloat.addEventListener('click', () => {
+      try { ym(106684335, 'reachGoal', 'whatsapp_click'); } catch (e) {}
+    });
+  }
+
+  // CTA Inline Form Handler
+  const ctaForm = document.getElementById('cta-form');
+  if (ctaForm) {
+    const ctaMsg = document.getElementById('cta-form-msg');
+    ctaForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ctaName = ctaForm.querySelector('[name="name"]').value.trim();
+      const ctaPhone = ctaForm.querySelector('[name="phone"]').value.trim();
+      if (!ctaName || !ctaPhone) {
+        if (ctaMsg) { ctaMsg.textContent = 'Заполните имя и телефон'; ctaMsg.style.color = 'crimson'; }
+        return;
+      }
+      const btn = ctaForm.querySelector('button[type="submit"]');
+      if (btn) { btn.disabled = true; btn.style.opacity = '.7'; }
+      if (ctaMsg) { ctaMsg.textContent = 'Отправка...'; ctaMsg.style.color = '#fff'; }
+      try {
+        const r = await fetch('/api/telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: ctaName, phone: ctaPhone, comment: '[CTA-форма]', page: location.href })
+        });
+        const data = await r.json().catch(() => ({}));
+        if (r.ok && data.ok) {
+          try { ym(106684335, 'reachGoal', 'form_submit'); } catch (ex) {}
+          window.location.href = '/spasibo';
+        } else {
+          if (ctaMsg) { ctaMsg.textContent = 'Ошибка. Попробуйте позже.'; ctaMsg.style.color = 'crimson'; }
+          if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+        }
+      } catch {
+        if (ctaMsg) { ctaMsg.textContent = 'Ошибка сети. Позвоните нам.'; ctaMsg.style.color = 'crimson'; }
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+      }
+    });
+  }
 });
