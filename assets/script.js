@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
           keepalive: true
         }).catch(() => {});
       } catch (e) {}
+      try { ym(106684335, 'reachGoal', 'phone_click'); } catch (e) {}
       try {
         const url = new URL(window.location.href);
         url.searchParams.set('phone_call', '1');
@@ -631,6 +632,8 @@ document.addEventListener('DOMContentLoaded', () => {
           // 2. UI Updates: Clear form and show success message
           msg.textContent = 'Заявка отправлена. Мы свяжемся с вами.';
           msg.style.color = 'seagreen';
+          try { ym(106684335, 'reachGoal', 'whatsapp_click'); } catch (e) {}
+          try { ym(106684335, 'reachGoal', 'form_submit'); } catch (e) {}
           form.reset();
           if (iti) iti.setNumber('');
 
@@ -669,6 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (ok && data.ok) {
             msg.textContent = 'Заявка отправлена. Мы свяжемся с вами.';
             msg.style.color = 'seagreen';
+            try { ym(106684335, 'reachGoal', 'form_submit'); } catch (e) {}
             form.reset();
             if (iti) iti.setNumber(''); // Reset flags/input
           } else {
