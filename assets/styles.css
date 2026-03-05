@@ -641,6 +641,7 @@ body.modal-open { overflow: hidden; }
     width: 100%; border-radius: 0;
   }
   .nav a:last-child { border-bottom: none; }
+  .nav a:hover { background: transparent; opacity: .85; }
   .nav a:active { background: rgba(59,130,246,.1); }
   .nav-dropdown { width: 100%; }
   .nav-dropdown-menu,
@@ -669,7 +670,7 @@ body.modal-open { overflow: hidden; }
     white-space: normal;
     transform: none !important; -webkit-transform: none !important;
   }
-  .nav-dropdown-menu a:hover { padding-left: 44px; }
+  .nav-dropdown-menu a:hover { background: transparent; padding-left: 44px; }
   .services { grid-template-columns: 1fr; }
   .cards { grid-template-columns: 1fr; }
   .contact-grid { grid-template-columns: 1fr; }
