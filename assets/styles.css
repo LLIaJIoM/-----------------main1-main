@@ -260,7 +260,7 @@ body.modal-open { overflow: hidden; }
 
 /* ─── Back to Top ─── */
 .back-to-top {
-  position: fixed; bottom: 32px; right: 24px;
+  position: fixed; bottom: 32px; right: 26px;
   width: 48px; height: 48px;
   --scroll-progress: 0%;
   --back-fill: var(--accent);
@@ -299,21 +299,32 @@ body.modal-open { overflow: hidden; }
 .cta-phone-link { color: #fff; font-weight: 600; text-decoration: underline; margin-left: 6px; }
 #cta-form-msg { margin-top: 10px; }
 
-/* ─── Floating WhatsApp Button ─── */
-.whatsapp-float {
-  position: fixed; bottom: 96px; right: 24px;
-  width: 56px; height: 56px; border-radius: 50%;
-  background: #25d366; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 20px rgba(37,211,102,.4);
-  z-index: 899; transition: transform .2s, box-shadow .2s;
+/* ─── Floating Action Buttons ─── */
+.float-buttons {
+  position: fixed; bottom: 92px; right: 24px;
+  display: flex; flex-direction: column; gap: 12px;
+  z-index: 899;
 }
-.whatsapp-float:hover { transform: scale(1.1); box-shadow: 0 6px 28px rgba(37,211,102,.5); }
+.float-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+  transition: transform .2s, box-shadow .2s;
+}
+.float-btn:hover { transform: scale(1.1); }
+.whatsapp-float { background: #25d366; }
+.whatsapp-float:hover { box-shadow: 0 6px 28px rgba(37,211,102,.5); }
+.telegram-float { background: #2AABEE; }
+.telegram-float:hover { box-shadow: 0 6px 28px rgba(42,171,238,.5); }
+.phone-float { background: var(--accent); }
+.phone-float:hover { box-shadow: 0 6px 28px rgba(59,130,246,.5); }
 
 @media (max-width: 768px) {
   .cta-form-row { flex-direction: column; }
   .cta-form-row .btn { width: 100%; }
-  .whatsapp-float { bottom: 80px; right: 16px; width: 50px; height: 50px; }
-  .whatsapp-float svg { width: 24px; height: 24px; }
+  .float-buttons { bottom: 72px; right: 16px; gap: 10px; }
+  .float-btn { width: 46px; height: 46px; }
+  .float-btn svg { width: 22px; height: 22px; }
 }
 
 /* ─── Scroll Animations ─── */
@@ -718,7 +729,7 @@ body.modal-open { overflow: hidden; }
   .carousel-btn.prev { left: 10px; }
   .carousel-btn.next { right: 10px; }
   :root { --header-height: 140px; }
-  .back-to-top { width: 40px; height: 40px; bottom: 20px; right: 16px; font-size: 18px; }
+  .back-to-top { width: 40px; height: 40px; bottom: 20px; right: 19px; font-size: 18px; }
 }
 
 @media (min-width: 1200px) {

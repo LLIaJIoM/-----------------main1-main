@@ -776,13 +776,25 @@ document.addEventListener('DOMContentLoaded', () => {
     observer.observe(el);
   });
 
-  // WhatsApp floating button tracking
-  const waFloat = document.querySelector('.whatsapp-float');
-  if (waFloat) {
-    waFloat.addEventListener('click', () => {
-      try { ym(106684335, 'reachGoal', 'whatsapp_click'); } catch (e) {}
+  // Floating buttons tracking
+  const floatTrack = (selector, type, source, ymGoal) => {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.addEventListener('click', () => {
+      try {
+        fetch('/api/phone-interest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, page: window.location.href, source }),
+          keepalive: true
+        }).catch(() => {});
+      } catch (e) {}
+      if (ymGoal) { try { ym(106684335, 'reachGoal', ymGoal); } catch (e) {} }
     });
-  }
+  };
+  floatTrack('.whatsapp-float', 'whatsapp', 'Плавающая кнопка WhatsApp', 'whatsapp_click');
+  floatTrack('.telegram-float', 'telegram', 'Плавающая кнопка Telegram', 'telegram_click');
+  floatTrack('.phone-float', 'phone', 'Плавающая кнопка Телефон', 'phone_float_click');
 
   // CTA Inline Form Handler
   const ctaForm = document.getElementById('cta-form');

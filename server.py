@@ -151,6 +151,7 @@ class Handler(SimpleHTTPRequestHandler):
             page = str(data.get("page", "")).strip()
             phone = str(data.get("phone", "")).strip()
             source = str(data.get("source", "Сайт")).strip() or "Сайт"
+            msg_type = str(data.get("type", "phone")).strip()
             ok = False
             err = None
             info = None
@@ -171,14 +172,29 @@ class Handler(SimpleHTTPRequestHandler):
             if BOT_TOKEN and recipients:
                 try:
                     now = datetime.now()
-                    clean_phone = phone.replace('tel:', '') if phone else ''
-                    parts = [
-                        f"📞 <b>Интерес к номеру телефона!</b>\n",
-                        f"📱 Телефон: {esc(clean_phone) if clean_phone else 'Не указан'}\n",
-                        f"📄 Страница: {esc(page) if page else 'Не указана'}\n",
-                        f"🕐 Время: {now.strftime('%d.%m.%Y')}, {now.strftime('%H:%M:%S')}\n",
-                        f"📍 Источник: {esc(source)}"
-                    ]
+                    if msg_type == 'whatsapp':
+                        parts = [
+                            f"💬 <b>Клик по WhatsApp!</b>\n",
+                            f"📄 Страница: {esc(page) if page else 'Не указана'}\n",
+                            f"🕐 Время: {now.strftime('%d.%m.%Y')}, {now.strftime('%H:%M:%S')}\n",
+                            f"📍 Источник: {esc(source)}"
+                        ]
+                    elif msg_type == 'telegram':
+                        parts = [
+                            f"✈️ <b>Клик по Telegram!</b>\n",
+                            f"📄 Страница: {esc(page) if page else 'Не указана'}\n",
+                            f"🕐 Время: {now.strftime('%d.%m.%Y')}, {now.strftime('%H:%M:%S')}\n",
+                            f"📍 Источник: {esc(source)}"
+                        ]
+                    else:
+                        clean_phone = phone.replace('tel:', '') if phone else ''
+                        parts = [
+                            f"📞 <b>Интерес к номеру телефона!</b>\n",
+                            f"📱 Телефон: {esc(clean_phone) if clean_phone else 'Не указан'}\n",
+                            f"📄 Страница: {esc(page) if page else 'Не указана'}\n",
+                            f"🕐 Время: {now.strftime('%d.%m.%Y')}, {now.strftime('%H:%M:%S')}\n",
+                            f"📍 Источник: {esc(source)}"
+                        ]
                     text = "".join(parts)
                     success = []
                     last_err = None
