@@ -171,13 +171,13 @@ class Handler(SimpleHTTPRequestHandler):
             if BOT_TOKEN and recipients:
                 try:
                     now = datetime.now()
+                    clean_phone = phone.replace('tel:', '') if phone else ''
                     parts = [
-                        f"<b>Интерес к телефону</b>\n",
-                        f"Телефон: {esc(phone) if phone else 'Не указан'}\n",
-                        f"Страница: {esc(page) if page else 'Не указана'}\n",
-                        f"Источник: {esc(source)}\n",
-                        f"Дата: {now.strftime('%d.%m.%Y')}\n",
-                        f"Время: {now.strftime('%H:%M:%S')}"
+                        f"📞 <b>Интерес к номеру телефона!</b>\n",
+                        f"📱 Телефон: {esc(clean_phone) if clean_phone else 'Не указан'}\n",
+                        f"📄 Страница: {esc(page) if page else 'Не указана'}\n",
+                        f"🕐 Время: {now.strftime('%d.%m.%Y')}, {now.strftime('%H:%M:%S')}\n",
+                        f"📍 Источник: {esc(source)}"
                     ]
                     text = "".join(parts)
                     success = []
@@ -298,18 +298,18 @@ class Handler(SimpleHTTPRequestHandler):
         if BOT_TOKEN and recipients:
             try:
                 country_display = _country_display(phone_norm, phone_iso2, phone_country, phone_dial_code)
-                parts = [
-                    f"<b>Новая заявка</b>\n",
-                    f"Имя: {esc(name)}\n",
-                    f"Телефон: {esc(phone_norm)}\n",
-                ]
-                parts.append(f"Страна: {esc(country_display) if country_display else 'Не указана'}\n")
                 now = datetime.now()
+                parts = [
+                    f"🔔 <b>Новая заявка с сайта!</b>\n",
+                    f"👤 Имя: {esc(name)}\n",
+                    f"📞 Телефон: {esc(phone_norm)}\n",
+                ]
+                if country_display:
+                    parts.append(f"🌍 Страна: {esc(country_display)}\n")
                 parts.extend([
-                    f"Комментарий: {esc(comment)}\n",
-                    f"Источник: {esc(source)}\n",
-                    f"Дата: {now.strftime('%d.%m.%Y')}\n",
-                    f"Время: {now.strftime('%H:%M:%S')}"
+                    f"📝 Комментарий: {esc(comment)}\n",
+                    f"🕐 Время: {now.strftime('%d.%m.%Y')}, {now.strftime('%H:%M:%S')}\n",
+                    f"📍 Источник: {esc(source)}"
                 ])
                 text = "".join(parts)
                 success = []
