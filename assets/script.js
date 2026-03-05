@@ -87,6 +87,24 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) {}
     });
   });
+  document.querySelectorAll('a[href*="t.me/"]').forEach(link => {
+    if (link.classList.contains('telegram-float')) return; // handled by floatTrack
+    link.addEventListener('click', () => {
+      try {
+        fetch('/api/phone-interest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'telegram',
+            page: window.location.href,
+            source: 'Кнопка Telegram на сайте'
+          }),
+          keepalive: true
+        }).catch(() => {});
+      } catch (e) {}
+      try { ym(106684335, 'reachGoal', 'telegram_click'); } catch (e) {}
+    });
+  });
   navLinks.forEach(a => {
     a.addEventListener('click', e => {
       e.preventDefault();

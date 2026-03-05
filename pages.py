@@ -304,7 +304,7 @@ def render_page(title, description, content, active_path="/", canonical=None, ke
     </a>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/intlTelInput.min.js" defer></script>
-  <script src="/assets/script.js?v=13" defer></script>
+  <script src="/assets/script.js?v=14" defer></script>
   <button id="backToTop" class="back-to-top" aria-label="Наверх"><span>↑</span></button>
 </body>
 </html>'''
