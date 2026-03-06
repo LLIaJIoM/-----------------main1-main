@@ -64,45 +64,48 @@ document.addEventListener('DOMContentLoaded', () => {
     if (id) navLinkMap.set(id, a);
   });
   let suppressSpyUntil = 0;
+
+  // Universal click tracking for all contact buttons
+  function getClickLocation(el) {
+    if (el.closest('.float-buttons')) return 'Плавающая кнопка';
+    if (el.closest('.emergency-bar')) return 'Экстренная полоса';
+    if (el.closest('.hero-section')) return 'Главный экран';
+    if (el.closest('.cta-section')) return 'CTA секция';
+    if (el.closest('footer')) return 'Футер';
+    if (el.closest('.contact-grid') || el.classList.contains('phone-static')) return 'Страница контактов';
+    if (el.closest('.social')) return 'Страница контактов';
+    return 'Сайт';
+  }
+  function trackClick(el, type, ymGoal, extra) {
+    const location = getClickLocation(el);
+    const payload = { type, page: window.location.href, source: location };
+    if (extra) Object.assign(payload, extra);
+    try {
+      fetch('/api/phone-interest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true
+      }).catch(() => {});
+    } catch (e) {}
+    try { ym(106684335, 'reachGoal', ymGoal); } catch (e) {}
+  }
+  // Phone links
   document.querySelectorAll('a[href^="tel:"]').forEach(link => {
     link.addEventListener('click', () => {
-      try {
-        const payload = {
-          phone: link.getAttribute('href') || '',
-          page: window.location.href,
-          source: 'Сайт'
-        };
-        fetch('/api/phone-interest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          keepalive: true
-        }).catch(() => {});
-      } catch (e) {}
-      try { ym(106684335, 'reachGoal', 'phone_click'); } catch (e) {}
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('phone_call', '1');
-        window.history.replaceState(null, '', url.toString());
-      } catch (e) {}
+      trackClick(link, 'phone', 'phone_click', { phone: link.getAttribute('href') || '' });
     });
   });
+  // Telegram links
   document.querySelectorAll('a[href*="t.me/"]').forEach(link => {
-    if (link.classList.contains('telegram-float')) return; // handled by floatTrack
     link.addEventListener('click', () => {
-      try {
-        fetch('/api/phone-interest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'telegram',
-            page: window.location.href,
-            source: 'Кнопка Telegram на сайте'
-          }),
-          keepalive: true
-        }).catch(() => {});
-      } catch (e) {}
-      try { ym(106684335, 'reachGoal', 'telegram_click'); } catch (e) {}
+      trackClick(link, 'telegram', 'telegram_click');
+    });
+  });
+  // WhatsApp links (floating handled here too)
+  document.querySelectorAll('a[href*="wa.me/"]').forEach(link => {
+    link.addEventListener('click', () => {
+      trackClick(link, 'whatsapp', 'whatsapp_click');
     });
   });
   navLinks.forEach(a => {
@@ -793,26 +796,6 @@ document.addEventListener('DOMContentLoaded', () => {
     el.classList.add('fade-up');
     observer.observe(el);
   });
-
-  // Floating buttons tracking
-  const floatTrack = (selector, type, source, ymGoal) => {
-    const el = document.querySelector(selector);
-    if (!el) return;
-    el.addEventListener('click', () => {
-      try {
-        fetch('/api/phone-interest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, page: window.location.href, source }),
-          keepalive: true
-        }).catch(() => {});
-      } catch (e) {}
-      if (ymGoal) { try { ym(106684335, 'reachGoal', ymGoal); } catch (e) {} }
-    });
-  };
-  floatTrack('.whatsapp-float', 'whatsapp', 'Плавающая кнопка WhatsApp', 'whatsapp_click');
-  floatTrack('.telegram-float', 'telegram', 'Плавающая кнопка Telegram', 'telegram_click');
-  floatTrack('.phone-float', 'phone', 'Плавающая кнопка Телефон', 'phone_float_click');
 
   // CTA Inline Form Handler
   const ctaForm = document.getElementById('cta-form');
