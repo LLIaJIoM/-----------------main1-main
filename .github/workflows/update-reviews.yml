@@ -10,52 +10,43 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Setup Python
-      uses: actions/setup-python@v5
+    - name: Scrape reviews on server (Russian IP)
+      uses: appleboy/ssh-action@v1
       with:
-        python-version: '3.11'
+        host: ${{ secrets.SERVER_HOST }}
+        username: root
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          cd /opt/tepliy-dom
 
-    - name: Install dependencies
-      run: |
-        pip install playwright
-        playwright install chromium
-        playwright install-deps chromium
+          echo "=== Pulling latest scraper ==="
+          git fetch origin main
+          git reset --hard origin/main
 
-    - name: Run scraper
-      run: python scrape_reviews.py
+          echo "=== Running review scraper ==="
+          python3 scrape_reviews.py
 
-    - name: Check for changes
-      id: check
-      run: |
-        if git diff --quiet assets/reviews.json 2>/dev/null; then
-          echo "changed=false" >> $GITHUB_OUTPUT
-          echo "No changes in reviews.json"
-        else
-          echo "changed=true" >> $GITHUB_OUTPUT
-          echo "Reviews updated!"
-          git diff assets/reviews.json
-        fi
+          echo "=== Checking for changes ==="
+          if git diff --quiet assets/reviews.json 2>/dev/null; then
+            echo "No changes in reviews"
+          else
+            echo "Reviews updated! Committing..."
+            git config user.name "review-bot"
+            git config user.email "review-bot@tepliy-dom.online"
+            git add assets/reviews.json
+            git commit -m "chore: auto-update reviews from Avito $(date +'%Y-%m-%d')"
+            git push origin main
+            echo "Pushed! Deploy will trigger automatically."
 
-    - name: Commit and push
-      if: steps.check.outputs.changed == 'true'
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add assets/reviews.json
-        git commit -m "chore: auto-update reviews from Avito $(date +'%Y-%m-%d')"
-        git push
-
-    - name: Upload debug screenshot
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: avito-debug-screenshot
-        path: avito_debug.png
-        retention-days: 3
-        if-no-files-found: ignore
+            echo "=== Restarting service ==="
+            systemctl restart tepliy-dom
+            sleep 3
+            if curl -sf http://127.0.0.1:8000/ > /dev/null 2>&1; then
+              echo "Server healthy after restart"
+            else
+              echo "Warning: server may still be starting"
+            fi
+          fi

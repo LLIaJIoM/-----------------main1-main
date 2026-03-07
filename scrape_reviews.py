@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """
 Скрипт для парсинга отзывов с Avito и обновления reviews.json.
-Запускается раз в день через GitHub Actions.
+Запускается раз в день через cron на сервере или GitHub Actions.
 
-Подход 1: Avito internal API (быстро, без браузера)
-Подход 2: Playwright headless browser (если API не работает)
-
+Использует Avito internal API (без Playwright, без браузера).
 Если парсинг не удался — текущий reviews.json НЕ трогается.
 """
 
@@ -24,15 +22,17 @@ from datetime import datetime
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REVIEWS_FILE = os.path.join(SCRIPT_DIR, "assets", "reviews.json")
 
-# ID продавца на Avito
-SELLER_ID = "c2b40ad72d9d2d39d8de28e340fff1f0"
+# ID продавца на Avito (числовой из URL /brands/i160621003)
+SELLER_NUMERIC_ID = "160621003"
+# Hash продавца (из параметра sellerId в URL)
+SELLER_HASH = "c2b40ad72d9d2d39d8de28e340fff1f0"
 
-# URL страницы с отзывами (для Playwright fallback)
+# URL страницы с отзывами (для справки)
 AVITO_PAGE_URL = (
-    "https://www.avito.ru/brands/i160621003/all"
+    f"https://www.avito.ru/brands/i{SELLER_NUMERIC_ID}/all"
     "?src=search_seller_info"
     "&iid=7528209497"
-    f"&sellerId={SELLER_ID}"
+    f"&sellerId={SELLER_HASH}"
 )
 
 # Сколько отзывов показывать на сайте
@@ -129,12 +129,18 @@ def try_avito_api():
     """
     print("\n[ПОДХОД 1] Avito Internal API")
 
-    # Несколько версий API для пробы
+    # Несколько версий API и форматов ID для пробы
     api_urls = [
-        f"https://www.avito.ru/web/6/user/{SELLER_ID}/ratings?page=1&limit=20",
-        f"https://www.avito.ru/web/5/user/{SELLER_ID}/ratings?page=1&limit=20",
-        f"https://www.avito.ru/web/4/user/{SELLER_ID}/ratings?page=1&limit=20",
-        f"https://m.avito.ru/api/18/user/{SELLER_ID}/ratings?page=1&limit=20",
+        # Числовой ID (основной)
+        f"https://www.avito.ru/web/6/user/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
+        f"https://www.avito.ru/web/6/user/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20&sort=date",
+        # Hash ID (запасной)
+        f"https://www.avito.ru/web/6/user/{SELLER_HASH}/ratings?page=1&limit=20",
+        # Другие эндпоинты
+        f"https://www.avito.ru/web/1/sellers/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
+        f"https://www.avito.ru/web/6/sellers/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
+        f"https://m.avito.ru/api/18/user/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
+        f"https://m.avito.ru/api/22/user/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
     ]
 
     headers = {
@@ -352,189 +358,6 @@ def extract_field(obj, field_names):
 
 
 # ═══════════════════════════════════════════════════════════
-# Подход 2: Playwright (headless browser)
-# ═══════════════════════════════════════════════════════════
-
-def try_playwright():
-    """
-    Попробовать получить отзывы через headless browser.
-    Возвращает список отзывов или пустой список при ошибке.
-    """
-    print("\n[ПОДХОД 2] Playwright headless browser")
-
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        print("  [SKIP] Playwright не установлен")
-        return []
-
-    reviews = []
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=[
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-blink-features=AutomationControlled",
-            ]
-        )
-        context = browser.new_context(
-            user_agent=USER_AGENT,
-            viewport={"width": 1920, "height": 1080},
-            locale="ru-RU",
-        )
-
-        # Скрываем признаки автоматизации
-        context.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', { get: () => false });
-            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-            Object.defineProperty(navigator, 'languages', { get: () => ['ru-RU', 'ru', 'en-US', 'en'] });
-            window.chrome = { runtime: {} };
-        """)
-
-        page = context.new_page()
-
-        try:
-            print(f"  [*] Загрузка: {AVITO_PAGE_URL[:60]}...")
-            page.goto(AVITO_PAGE_URL, wait_until="domcontentloaded", timeout=60000)
-            page.wait_for_timeout(5000)
-
-            # Скриншот для дебага
-            screenshot_path = os.path.join(SCRIPT_DIR, "avito_debug.png")
-            page.screenshot(path=screenshot_path, full_page=False)
-            print(f"  [*] Скриншот: {screenshot_path}")
-
-            # Ищем вкладку "Отзывы"
-            try:
-                tabs = page.query_selector_all('[data-marker*="tab"], [role="tab"]')
-                for tab in tabs:
-                    tab_text = tab.inner_text().strip().lower()
-                    if "отзыв" in tab_text:
-                        tab.click()
-                        page.wait_for_timeout(3000)
-                        print("  [*] Перешли на вкладку Отзывы")
-                        break
-            except Exception:
-                pass
-
-            # Перехватываем XHR-запросы к API отзывов
-            print("  [*] Ищем отзывы через JS...")
-            js_reviews = page.evaluate("""
-                () => {
-                    const results = [];
-                    // Ищем все текстовые блоки, которые похожи на отзывы
-                    const allElements = document.querySelectorAll('div, article, section, li');
-                    const seen = new Set();
-
-                    for (const el of allElements) {
-                        // Проверяем маркеры отзывов
-                        const marker = el.getAttribute('data-marker') || '';
-                        const cls = el.className || '';
-
-                        const isReview = (
-                            marker.includes('review') ||
-                            marker.includes('rating') ||
-                            cls.includes('Review') ||
-                            cls.includes('review') ||
-                            cls.includes('feedback') ||
-                            cls.includes('Feedback')
-                        );
-
-                        if (!isReview) continue;
-
-                        const text = el.innerText || '';
-                        if (text.length < 10 || text.length > 2000) continue;
-
-                        // Дедупликация
-                        const key = text.substring(0, 50);
-                        if (seen.has(key)) continue;
-                        seen.add(key);
-
-                        // Подсчёт звёзд
-                        const stars = el.querySelectorAll(
-                            '[class*="filled"], [class*="active"], [class*="Full"]'
-                        );
-
-                        results.push({
-                            text: text.substring(0, 1000),
-                            rating: stars.length || 5,
-                            marker: marker,
-                            cls: cls.substring(0, 100)
-                        });
-                    }
-                    return results;
-                }
-            """)
-
-            if js_reviews:
-                print(f"  [*] Найдено {len(js_reviews)} блоков")
-                for jr in js_reviews:
-                    review = parse_text_block(jr.get("text", ""), jr.get("rating", 5))
-                    if review:
-                        reviews.append(review)
-            else:
-                # Логируем текст страницы для дебага
-                body = page.inner_text("body")[:500]
-                print(f"  [WARN] Отзывы не найдены. Текст:\n  {body[:300]}...")
-
-        except Exception as e:
-            print(f"  [ОШИБКА] {e}")
-        finally:
-            browser.close()
-
-    if reviews:
-        print(f"  [OK] Извлечено {len(reviews)} отзывов через Playwright")
-    else:
-        print("  [FAIL] Playwright подход не удался")
-
-    return reviews
-
-
-def parse_text_block(text, rating=5):
-    """Разбор текстового блока отзыва."""
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
-    if len(lines) < 2:
-        return None
-
-    name = lines[0] if len(lines[0]) < 30 else "Клиент"
-    review_text = ""
-    date = ""
-
-    skip_words = ["оценка", "отзыв", "ответ", "полезн", "пожалов", "подробнее", "показать"]
-
-    for line in lines[1:]:
-        line_lower = line.lower()
-        # Ищем дату
-        date_match = re.search(
-            r'\d{1,2}\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)',
-            line_lower
-        )
-        if date_match:
-            date = line.strip()
-            continue
-        # Пропускаем служебные строки
-        if any(w in line_lower for w in skip_words):
-            continue
-        if len(line) > 3:
-            if review_text:
-                review_text += " "
-            review_text += line
-
-    if not review_text or len(review_text) < 3:
-        return None
-
-    return {
-        "name": name,
-        "rating": min(max(rating, 1), 5),
-        "text": review_text[:500],
-        "date": clean_date(date),
-        "source": "Avito"
-    }
-
-
-# ═══════════════════════════════════════════════════════════
 # Main
 # ═══════════════════════════════════════════════════════════
 
@@ -543,21 +366,19 @@ def main():
     print(f"  Парсинг отзывов с Avito — {datetime.now().strftime('%d.%m.%Y %H:%M')}")
     print("=" * 60)
     print(f"[*] Файл отзывов: {REVIEWS_FILE}")
+    print(f"[*] Числовой ID: {SELLER_NUMERIC_ID}")
+    print(f"[*] Hash ID: {SELLER_HASH}")
 
     current_reviews = load_current_reviews()
     print(f"[*] Текущих отзывов: {len(current_reviews)}")
 
-    # Подход 1: API
+    # Подход: Avito API (без браузера)
     new_reviews = try_avito_api()
-
-    # Подход 2: Playwright (если API не дал результатов)
-    if not new_reviews:
-        new_reviews = try_playwright()
 
     # Если ничего не нашли — не трогаем файл
     if not new_reviews:
         print("\n" + "=" * 60)
-        print("[!] Отзывы не найдены ни одним способом.")
+        print("[!] Отзывы не найдены.")
         print("[!] Текущий reviews.json НЕ изменён.")
         print("=" * 60)
         sys.exit(0)
