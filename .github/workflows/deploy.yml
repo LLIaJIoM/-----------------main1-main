@@ -17,13 +17,9 @@ jobs:
         username: root
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          echo "=== System info ==="
-          python3 --version || echo "python3 not found"
-          pip3 --version || echo "pip3 not found"
-
           echo "=== Checking /opt/tepliy-dom ==="
           if [ ! -d /opt/tepliy-dom ]; then
-            echo "Directory /opt/tepliy-dom not found! Cloning..."
+            echo "Directory not found! Cloning..."
             git clone https://github.com/LLIaJIoM/-----------------main1-main.git /opt/tepliy-dom
           fi
           cd /opt/tepliy-dom
@@ -39,43 +35,32 @@ jobs:
           echo "=== Installing dependencies ==="
           pip3 install --break-system-packages -r requirements.txt 2>&1 || echo "pip install warning"
 
-          echo "=== Checking .env / config ==="
-          if [ -f .env ]; then echo ".env exists"; else echo "WARNING: .env not found"; fi
+          echo "=== Checking config ==="
           if [ -f config.json ]; then echo "config.json exists"; else echo "WARNING: config.json not found"; fi
 
-          echo "=== Checking systemd service ==="
-          if [ -f /etc/systemd/system/tepliy-dom.service ]; then
-            echo "Service file exists"
-          else
-            echo "Service file not found! Creating..."
-            cat > /etc/systemd/system/tepliy-dom.service << 'UNIT'
-          [Unit]
-          Description=Tepliy Dom Web Server
-          After=network.target
-
-          [Service]
-          Type=simple
-          WorkingDirectory=/opt/tepliy-dom
-          ExecStart=/usr/bin/python3 /opt/tepliy-dom/server.py
-          Restart=always
-          RestartSec=5
-          Environment=PORT=8000
-          EnvironmentFile=-/opt/tepliy-dom/.env
-
-          [Install]
-          WantedBy=multi-user.target
-          UNIT
-            systemctl daemon-reload
-            systemctl enable tepliy-dom
-          fi
-
-          echo "=== Stopping service ==="
+          echo "=== Stopping everything ==="
           systemctl stop tepliy-dom 2>&1 || true
           sleep 1
 
-          echo "=== Killing port 8000 ==="
+          # Kill ALL processes on port 8000 aggressively
           fuser -k 8000/tcp 2>/dev/null || true
+          sleep 1
+          # Double-check: kill any remaining python processes for tepliy-dom
+          pkill -f "python3 /opt/tepliy-dom" 2>/dev/null || true
+          pkill -f "python3 /opt/tepliy-dom/watchdog.py" 2>/dev/null || true
+          pkill -f "python3 /opt/tepliy-dom/server.py" 2>/dev/null || true
           sleep 2
+
+          # Verify port is free
+          if fuser 8000/tcp 2>/dev/null; then
+            echo "ERROR: Port 8000 still occupied! Force killing..."
+            fuser -k -9 8000/tcp 2>/dev/null || true
+            sleep 2
+          fi
+          echo "Port 8000 is free"
+
+          echo "=== Reset failed state ==="
+          systemctl reset-failed tepliy-dom 2>/dev/null || true
 
           echo "=== Testing Python import ==="
           cd /opt/tepliy-dom && python3 -c "from pages import get_page; print('Import OK')" 2>&1 || echo "IMPORT FAILED"
@@ -84,12 +69,12 @@ jobs:
           systemctl start tepliy-dom
           sleep 5
 
-          echo "=== Checking health ==="
+          echo "=== Health check ==="
           if curl -sf http://127.0.0.1:8000/ > /dev/null 2>&1; then
-            echo "Server is healthy"
+            echo "Server is HEALTHY"
           else
-            echo "Server NOT responding! Checking logs..."
-            journalctl -u tepliy-dom --no-pager -n 30
+            echo "Server NOT responding! Logs:"
+            journalctl -u tepliy-dom --no-pager -n 20
           fi
 
           echo "=== Service status ==="
