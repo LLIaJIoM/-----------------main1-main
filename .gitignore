@@ -6,3 +6,4 @@ venv/
 cloudflared.exe
 requests.log
 config.json
+avito_debug.png

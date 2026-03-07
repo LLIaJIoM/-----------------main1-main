@@ -1,0 +1,61 @@
+name: Update Reviews
+
+on:
+  schedule:
+    # Каждый день в 03:00 UTC (06:00 МСК)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    # Ручной запуск через UI GitHub
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        pip install playwright
+        playwright install chromium
+        playwright install-deps chromium
+
+    - name: Run scraper
+      run: python scrape_reviews.py
+
+    - name: Check for changes
+      id: check
+      run: |
+        if git diff --quiet assets/reviews.json 2>/dev/null; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+          echo "No changes in reviews.json"
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+          echo "Reviews updated!"
+          git diff assets/reviews.json
+        fi
+
+    - name: Commit and push
+      if: steps.check.outputs.changed == 'true'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add assets/reviews.json
+        git commit -m "chore: auto-update reviews from Avito $(date +'%Y-%m-%d')"
+        git push
+
+    - name: Upload debug screenshot
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: avito-debug-screenshot
+        path: avito_debug.png
+        retention-days: 3
+        if-no-files-found: ignore
