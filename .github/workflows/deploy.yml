@@ -42,24 +42,20 @@ jobs:
           systemctl stop tepliy-dom 2>&1 || true
           sleep 1
 
-          # Kill ALL processes on port 8000 aggressively
+          # Kill processes on port 8000
           fuser -k 8000/tcp 2>/dev/null || true
           sleep 1
-          # Double-check: kill any remaining python processes for tepliy-dom
-          pkill -f "python3 /opt/tepliy-dom" 2>/dev/null || true
-          pkill -f "python3 /opt/tepliy-dom/watchdog.py" 2>/dev/null || true
-          pkill -f "python3 /opt/tepliy-dom/server.py" 2>/dev/null || true
+          fuser -k 8000/tcp 2>/dev/null || true
           sleep 2
 
           # Verify port is free
           if fuser 8000/tcp 2>/dev/null; then
-            echo "ERROR: Port 8000 still occupied! Force killing..."
+            echo "Port 8000 still busy, force kill..."
             fuser -k -9 8000/tcp 2>/dev/null || true
             sleep 2
           fi
           echo "Port 8000 is free"
 
-          echo "=== Reset failed state ==="
           systemctl reset-failed tepliy-dom 2>/dev/null || true
 
           echo "=== Testing Python import ==="
