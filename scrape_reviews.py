@@ -158,21 +158,23 @@ def try_avito_api():
 
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+                raw = resp.read().decode("utf-8")
+                data = json.loads(raw)
 
             # Проверяем, не rate-limit ли это
-            if "too-many-requests" in data or "error" in data:
+            if isinstance(data, dict) and ("too-many-requests" in data or "error" in data):
                 print(f"  [!] Rate limit / ошибка: {data}")
                 continue
+
+            # Подробный дебаг структуры ответа
+            debug_structure(data, url)
 
             reviews = parse_api_response(data)
             if reviews:
                 print(f"  [OK] Получено {len(reviews)} отзывов через API")
                 return reviews
             else:
-                print(f"  [!] API ответил, но отзывы не найдены в ответе")
-                # Логируем структуру ответа для дебага
-                print(f"  [DEBUG] Ключи ответа: {list(data.keys())[:10]}")
+                print(f"  [!] API ответил, но парсер не извлёк отзывы")
 
         except urllib.error.HTTPError as e:
             print(f"  [!] HTTP {e.code}: {e.reason}")
@@ -190,68 +192,163 @@ def try_avito_api():
     return []
 
 
+def debug_structure(data, url=""):
+    """Подробный лог структуры API-ответа для дебага."""
+    print(f"  [DEBUG] === Структура ответа ===")
+    if isinstance(data, dict):
+        print(f"  [DEBUG] Тип: dict, ключи: {list(data.keys())}")
+        for key in data:
+            val = data[key]
+            if isinstance(val, list):
+                print(f"  [DEBUG]   '{key}': list[{len(val)}]")
+                if val:
+                    first = val[0]
+                    if isinstance(first, dict):
+                        print(f"  [DEBUG]     [0] keys: {list(first.keys())}")
+                        # Показываем значения первого элемента (обрезая длинные)
+                        for k, v in first.items():
+                            sv = str(v)[:100]
+                            print(f"  [DEBUG]     [0].{k} = {sv}")
+                    else:
+                        print(f"  [DEBUG]     [0] = {str(first)[:200]}")
+            elif isinstance(val, dict):
+                print(f"  [DEBUG]   '{key}': dict, keys: {list(val.keys())}")
+                for k2 in val:
+                    v2 = val[k2]
+                    if isinstance(v2, list):
+                        print(f"  [DEBUG]     '{k2}': list[{len(v2)}]")
+                        if v2 and isinstance(v2[0], dict):
+                            print(f"  [DEBUG]       [0] keys: {list(v2[0].keys())}")
+                            for k3, v3 in v2[0].items():
+                                print(f"  [DEBUG]       [0].{k3} = {str(v3)[:100]}")
+                    else:
+                        print(f"  [DEBUG]     '{k2}' = {str(v2)[:100]}")
+            else:
+                print(f"  [DEBUG]   '{key}': {str(val)[:100]}")
+    elif isinstance(data, list):
+        print(f"  [DEBUG] Тип: list[{len(data)}]")
+        if data and isinstance(data[0], dict):
+            print(f"  [DEBUG]   [0] keys: {list(data[0].keys())}")
+    print(f"  [DEBUG] === конец ===")
+    return
+
+
+def find_review_list(data, depth=0):
+    """
+    Рекурсивно ищет список отзывов в структуре данных.
+    Возвращает первый найденный список словарей.
+    """
+    if depth > 5:
+        return None
+
+    if isinstance(data, list) and len(data) > 0:
+        # Проверяем, похож ли этот список на отзывы
+        if isinstance(data[0], dict):
+            # Ищем характерные поля отзыва
+            keys = set(data[0].keys())
+            review_fields = {"text", "body", "comment", "message", "rating", "score", "value"}
+            if keys & review_fields:
+                return data
+        return data if isinstance(data[0], dict) else None
+
+    if isinstance(data, dict):
+        # Приоритетные ключи для поиска
+        priority_keys = [
+            "entries", "ratings", "reviews", "items", "result",
+            "data", "list", "comments", "feedbacks"
+        ]
+        # Сначала проверяем приоритетные ключи
+        for key in priority_keys:
+            if key in data:
+                found = find_review_list(data[key], depth + 1)
+                if found:
+                    return found
+        # Потом все остальные
+        for key in data:
+            if key not in priority_keys:
+                found = find_review_list(data[key], depth + 1)
+                if found:
+                    return found
+    return None
+
+
 def parse_api_response(data):
     """Разобрать JSON-ответ API Avito и извлечь отзывы."""
     reviews = []
 
-    # Варианты структуры ответа (Avito может менять формат)
-    items = None
-
-    # Формат 1: {ratings: [{...}, ...]}
-    if "ratings" in data:
-        items = data["ratings"]
-    # Формат 2: {result: {ratings: [...]}}
-    elif "result" in data and isinstance(data["result"], dict):
-        items = data["result"].get("ratings") or data["result"].get("reviews") or data["result"].get("items")
-    # Формат 3: {items: [...]}
-    elif "items" in data:
-        items = data["items"]
-    # Формат 4: {reviews: [...]}
-    elif "reviews" in data:
-        items = data["reviews"]
-    # Формат 5: список на верхнем уровне
-    elif isinstance(data, list):
-        items = data
+    # Рекурсивно ищем список отзывов в любой структуре
+    items = find_review_list(data)
 
     if not items or not isinstance(items, list):
+        print(f"  [DEBUG] find_review_list не нашёл список")
         return []
+
+    print(f"  [DEBUG] Найден список из {len(items)} элементов")
 
     for item in items:
         if not isinstance(item, dict):
             continue
 
-        # Извлекаем поля (разные варианты имён)
-        name = (
-            item.get("userName") or item.get("user_name") or
-            item.get("authorName") or item.get("author_name") or
-            item.get("author", {}).get("name") if isinstance(item.get("author"), dict) else
-            item.get("name") or "Клиент"
-        )
-        text = (
-            item.get("text") or item.get("body") or
-            item.get("comment") or item.get("message") or ""
-        )
-        rating = item.get("rating") or item.get("score") or item.get("value") or 5
+        # Извлекаем поля с максимальной гибкостью
+        name = extract_field(item, [
+            "userName", "user_name", "authorName", "author_name",
+            "senderName", "sender_name", "name", "title"
+        ])
+        # Также проверяем вложенные объекты
+        if not name:
+            for sub_key in ["author", "user", "sender", "owner"]:
+                sub = item.get(sub_key)
+                if isinstance(sub, dict):
+                    name = sub.get("name") or sub.get("title") or sub.get("userName") or ""
+                    if name:
+                        break
+        name = str(name).strip() if name else "Клиент"
 
-        # Дата — может быть timestamp или строка
-        raw_date = item.get("date") or item.get("created") or item.get("createdAt") or item.get("created_at") or ""
-        if isinstance(raw_date, (int, float)):
-            date = timestamp_to_russian_date(raw_date)
-        else:
-            date = clean_date(str(raw_date))
-
+        text = extract_field(item, [
+            "text", "body", "comment", "message", "content", "description", "review"
+        ])
         if not text or len(str(text).strip()) < 2:
             continue
+        text = str(text).strip()
+
+        rating = extract_field(item, ["rating", "score", "value", "stars", "mark"])
+        try:
+            rating = int(rating) if rating else 5
+        except (ValueError, TypeError):
+            rating = 5
+
+        # Дата — может быть timestamp или строка
+        raw_date = extract_field(item, [
+            "date", "created", "createdAt", "created_at",
+            "updatedAt", "updated_at", "time", "timestamp"
+        ])
+        if isinstance(raw_date, (int, float)):
+            # Если timestamp < 100000, возможно это относительное время
+            if raw_date > 1000000000:
+                date = timestamp_to_russian_date(raw_date)
+            else:
+                date = ""
+        else:
+            date = clean_date(str(raw_date)) if raw_date else ""
 
         reviews.append({
-            "name": str(name).strip() or "Клиент",
-            "rating": min(max(int(rating), 1), 5),
-            "text": str(text).strip()[:500],
+            "name": name or "Клиент",
+            "rating": min(max(rating, 1), 5),
+            "text": text[:500],
             "date": date,
             "source": "Avito"
         })
 
     return reviews
+
+
+def extract_field(obj, field_names):
+    """Извлечь значение из словаря, пробуя несколько имён полей."""
+    for name in field_names:
+        val = obj.get(name)
+        if val is not None and val != "" and val != 0:
+            return val
+    return None
 
 
 # ═══════════════════════════════════════════════════════════
