@@ -62,13 +62,13 @@ body { padding-top: var(--header-height); }
 .nav a.active { opacity: 1; background: rgba(255,255,255,.12); font-weight: 600; }
 .header-tg {
   display: flex; align-items: center; justify-content: center;
-  width: 38px; height: 38px; border-radius: 10px;
-  background: linear-gradient(135deg, #2aabee, #229ed9);
-  transition: transform .2s, box-shadow .2s;
+  width: 34px; height: 34px; border-radius: 8px;
+  background: rgba(42,171,238,.15);
+  transition: background .2s, transform .2s;
   flex-shrink: 0;
 }
-.header-tg svg { width: 20px; height: 20px; fill: #fff; }
-.header-tg:hover { transform: scale(1.1); box-shadow: 0 4px 16px rgba(42,171,238,.45); }
+.header-tg svg { width: 16px; height: 16px; fill: #2aabee; }
+.header-tg:hover { background: rgba(42,171,238,.25); transform: scale(1.05); }
 .nav-toggle {
   display: none; align-items: center; justify-content: center;
   width: 44px; height: 44px; border-radius: 12px;
@@ -442,60 +442,55 @@ body.modal-open { overflow: hidden; }
 .footer-col > p { font-size: 14px; line-height: 1.6; }
 /* ─── Telegram channel card (contacts page) ─── */
 .tg-channel-card {
-  display: flex; align-items: center; gap: 40px;
-  background: linear-gradient(135deg, rgba(42,171,238,.08), rgba(42,171,238,.03));
-  border: 1px solid rgba(42,171,238,.15);
-  border-radius: 20px; padding: 40px;
-  transition: border-color .3s, box-shadow .3s;
+  display: flex; align-items: center; gap: 32px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px;
 }
-.tg-channel-card:hover { border-color: rgba(42,171,238,.3); box-shadow: 0 8px 40px rgba(42,171,238,.08); }
 .tg-channel-info { flex: 1; }
 .tg-channel-info h3 {
-  font-size: 22px; font-weight: 700; margin-bottom: 8px;
-  display: flex; align-items: center; gap: 10px;
+  font-size: 18px; font-weight: 700; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
 }
-.tg-channel-info h3 svg { width: 28px; height: 28px; fill: #2aabee; }
-.tg-channel-name { color: #2aabee; font-size: 18px; font-weight: 600; margin-bottom: 12px; }
-.tg-channel-info p { color: var(--text-muted); font-size: 14px; margin-bottom: 16px; line-height: 1.5; }
-.tg-channel-info ul { list-style: none; margin-bottom: 20px; padding: 0; }
+.tg-channel-info h3 svg { width: 20px; height: 20px; fill: #2aabee; }
+.tg-channel-name { color: #2aabee; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+.tg-channel-info p { color: var(--text-muted); font-size: 14px; margin-bottom: 14px; line-height: 1.5; }
+.tg-channel-info ul { list-style: none; margin-bottom: 18px; padding: 0; }
 .tg-channel-info ul li {
-  color: var(--text-muted); font-size: 13px; margin-bottom: 6px;
-  padding-left: 20px; position: relative;
+  color: var(--text-muted); font-size: 13px; margin-bottom: 5px;
+  padding-left: 18px; position: relative;
 }
 .tg-channel-info ul li::before { content: "\2713"; position: absolute; left: 0; color: #22c55e; font-weight: 700; }
 .tg-subscribe-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: linear-gradient(135deg, #2aabee, #1a95d0);
-  color: #fff !important; padding: 12px 28px; border-radius: 12px;
-  font-size: 15px; font-weight: 600; text-decoration: none;
-  transition: transform .2s, box-shadow .2s;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #2aabee; color: #fff !important;
+  padding: 10px 22px; border-radius: 10px;
+  font-size: 14px; font-weight: 600; text-decoration: none;
+  transition: background .2s;
 }
-.tg-subscribe-btn svg { width: 20px; height: 20px; fill: #fff; }
-.tg-subscribe-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(42,171,238,.35); }
+.tg-subscribe-btn svg { width: 16px; height: 16px; fill: #fff; }
+.tg-subscribe-btn:hover { background: #229ed9; }
 .tg-channel-qr {
-  flex-shrink: 0; width: 160px; height: 160px;
-  background: #fff; border-radius: 16px; padding: 0;
-  box-shadow: 0 4px 20px rgba(0,0,0,.1); overflow: hidden;
+  flex-shrink: 0; width: 130px; height: 130px;
+  background: #fff; border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08); overflow: hidden;
 }
 .tg-channel-qr img { width: 100%; height: 100%; object-fit: contain; }
 @media (max-width: 640px) {
-  .tg-channel-card { flex-direction: column; text-align: center; padding: 28px; gap: 24px; }
+  .tg-channel-card { flex-direction: column; text-align: center; padding: 24px; gap: 20px; }
   .tg-channel-info h3 { justify-content: center; }
   .tg-channel-info ul { text-align: left; }
+  .tg-channel-qr { width: 120px; height: 120px; }
 }
 
 /* ─── Footer Telegram channel ─── */
-.footer-tg-channel {
-  margin-top: 12px; padding: 12px; border-radius: 10px;
-  background: rgba(42,171,238,.08); border: 1px solid rgba(42,171,238,.18);
-}
+.footer-tg-channel { margin-top: 10px; }
 .footer-tg-channel a {
-  display: flex !important; align-items: center; gap: 8px;
-  color: #2aabee !important; font-weight: 600; font-size: 14px !important;
-  margin-bottom: 4px;
+  display: flex !important; align-items: center; gap: 6px;
+  color: #2aabee !important; font-weight: 600; font-size: 13px !important;
+  margin-bottom: 2px;
 }
-.footer-tg-channel a svg { width: 18px; height: 18px; fill: #2aabee; flex-shrink: 0; }
-.footer-tg-channel span { font-size: 12px; color: #4b5563; }
+.footer-tg-channel a svg { width: 14px; height: 14px; fill: #2aabee; flex-shrink: 0; }
+.footer-tg-channel span { font-size: 11px; color: #4b5563; }
 .footer-bottom {
   border-top: 1px solid rgba(255,255,255,.06);
   padding-top: 20px; text-align: center; font-size: 13px;
