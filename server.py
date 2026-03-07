@@ -36,6 +36,8 @@ if env_chat_ids:
     if not CHAT_IDS:
         CHAT_IDS = [x.strip() for x in env_chat_ids.split(",") if x.strip()]
 
+REVIEWS_TOKEN = os.environ.get("REVIEWS_TOKEN")
+
 try:
     with open(os.path.join(ROOT_DIR, "config.json"), "r", encoding="utf-8") as f:
         cfg = json.load(f)
@@ -44,8 +46,12 @@ try:
         ids = cfg.get("TELEGRAM_CHAT_IDS") or cfg.get("chat_ids") or []
         if isinstance(ids, list):
             CHAT_IDS = [str(x) for x in ids if str(x)]
+        REVIEWS_TOKEN = REVIEWS_TOKEN or str(cfg.get("REVIEWS_TOKEN") or cfg.get("reviews_token") or "")
 except Exception:
     pass
+
+REVIEWS_FILE = os.path.join(ROOT_DIR, "assets", "reviews.json")
+MAX_REVIEWS = 6
 
 def esc(s):
     return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -100,19 +106,31 @@ def normalize_phone(raw):
         
     return cleaned
 
+def _load_reviews():
+    """Load reviews from assets/reviews.json, return list."""
+    try:
+        with open(REVIEWS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            return data
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    return []
+
+
+def _save_reviews(reviews):
+    """Save reviews list to assets/reviews.json."""
+    with open(REVIEWS_FILE, "w", encoding="utf-8") as f:
+        json.dump(reviews, f, ensure_ascii=False, indent=2)
+
+
 class Handler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
         full = super().translate_path(path)
         return full
     def do_GET(self):
         if self.path == "/api/reviews":
-            payload = []
-            try:
-                p = os.path.join(ROOT_DIR, "reviews.json")
-                with open(p, "r", encoding="utf-8") as f:
-                    payload = json.load(f)
-            except Exception:
-                payload = []
+            payload = _load_reviews()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
@@ -134,8 +152,133 @@ class Handler(SimpleHTTPRequestHandler):
         # Fall through to static file serving for assets, etc.
         return super().do_GET()
 
+    def _handle_reviews(self, data):
+        """Handle /api/reviews/add and /api/reviews/set endpoints."""
+        # ── Token validation ──
+        token = str(data.get("token", "")).strip()
+        if not REVIEWS_TOKEN or token != REVIEWS_TOKEN:
+            self.send_response(403)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": False, "error": "forbidden"}).encode("utf-8"))
+            return
+
+        try:
+            if self.path == "/api/reviews/add":
+                # ── Add single review ──
+                review = data.get("review")
+                if not review or not isinstance(review, dict):
+                    self.send_response(400)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"ok": False, "error": "missing_review"}).encode("utf-8"))
+                    return
+
+                name = str(review.get("name", "")).strip()
+                text = str(review.get("text", "")).strip()
+                rating = review.get("rating", 5)
+                date = str(review.get("date", "")).strip()
+                source = str(review.get("source", "Avito")).strip() or "Avito"
+
+                if not name or not text:
+                    self.send_response(400)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"ok": False, "error": "name_and_text_required"}).encode("utf-8"))
+                    return
+
+                try:
+                    rating = int(rating)
+                    rating = max(1, min(5, rating))
+                except (ValueError, TypeError):
+                    rating = 5
+
+                if not date:
+                    date = datetime.now().strftime("%d %B").lstrip("0")
+
+                new_review = {
+                    "name": name,
+                    "rating": rating,
+                    "text": text,
+                    "date": date,
+                    "source": source
+                }
+
+                reviews = _load_reviews()
+                reviews.insert(0, new_review)  # Newest first
+                reviews = reviews[:MAX_REVIEWS]  # Keep only 6
+                _save_reviews(reviews)
+
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "ok": True,
+                    "total": len(reviews),
+                    "reviews": reviews
+                }, ensure_ascii=False).encode("utf-8"))
+                return
+
+            elif self.path == "/api/reviews/set":
+                # ── Replace all reviews ──
+                reviews_data = data.get("reviews")
+                if not reviews_data or not isinstance(reviews_data, list):
+                    self.send_response(400)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"ok": False, "error": "missing_reviews_array"}).encode("utf-8"))
+                    return
+
+                cleaned = []
+                for r in reviews_data[:MAX_REVIEWS]:
+                    if not isinstance(r, dict):
+                        continue
+                    name = str(r.get("name", "")).strip()
+                    text = str(r.get("text", "")).strip()
+                    if not name or not text:
+                        continue
+                    try:
+                        rating = int(r.get("rating", 5))
+                        rating = max(1, min(5, rating))
+                    except (ValueError, TypeError):
+                        rating = 5
+                    cleaned.append({
+                        "name": name,
+                        "rating": rating,
+                        "text": text,
+                        "date": str(r.get("date", "")).strip(),
+                        "source": str(r.get("source", "Avito")).strip() or "Avito"
+                    })
+
+                if not cleaned:
+                    self.send_response(400)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"ok": False, "error": "no_valid_reviews"}).encode("utf-8"))
+                    return
+
+                _save_reviews(cleaned)
+
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "ok": True,
+                    "total": len(cleaned),
+                    "reviews": cleaned
+                }, ensure_ascii=False).encode("utf-8"))
+                return
+
+        except Exception as e:
+            self.send_response(500)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode("utf-8"))
+            return
+
     def do_POST(self):
-        if self.path not in ("/api/telegram", "/api/phone-interest"):
+        allowed = ("/api/telegram", "/api/phone-interest", "/api/reviews/add", "/api/reviews/set")
+        if self.path not in allowed:
             self.send_response(404)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
@@ -147,6 +290,11 @@ class Handler(SimpleHTTPRequestHandler):
             data = json.loads(body.decode("utf-8"))
         except Exception:
             data = {}
+
+        # ─── Управление отзывами ───
+        if self.path in ("/api/reviews/add", "/api/reviews/set"):
+            return self._handle_reviews(data)
+
         if self.path == "/api/phone-interest":
             page = str(data.get("page", "")).strip()
             phone = str(data.get("phone", "")).strip()
