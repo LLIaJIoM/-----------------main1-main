@@ -129,18 +129,25 @@ def try_avito_api():
     """
     print("\n[ПОДХОД 1] Avito Internal API")
 
-    # Несколько версий API и форматов ID для пробы
+    # Все возможные эндпоинты API (разные пути, версии, ID)
     api_urls = [
-        # Числовой ID (основной)
+        # reviews (не ratings!)
+        f"https://www.avito.ru/web/6/user/{SELLER_NUMERIC_ID}/reviews?page=1&limit=20",
+        f"https://www.avito.ru/web/6/user/{SELLER_HASH}/reviews?page=1&limit=20",
+        # ratings с разными параметрами
         f"https://www.avito.ru/web/6/user/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
-        f"https://www.avito.ru/web/6/user/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20&sort=date",
-        # Hash ID (запасной)
         f"https://www.avito.ru/web/6/user/{SELLER_HASH}/ratings?page=1&limit=20",
-        # Другие эндпоинты
-        f"https://www.avito.ru/web/1/sellers/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
-        f"https://www.avito.ru/web/6/sellers/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
-        f"https://m.avito.ru/api/18/user/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
-        f"https://m.avito.ru/api/22/user/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
+        # feedbacks
+        f"https://www.avito.ru/web/6/user/{SELLER_NUMERIC_ID}/feedbacks?page=1&limit=20",
+        # brands endpoint
+        f"https://www.avito.ru/web/6/brands/{SELLER_NUMERIC_ID}/reviews?page=1&limit=20",
+        f"https://www.avito.ru/web/6/brands/{SELLER_NUMERIC_ID}/ratings?page=1&limit=20",
+        # profiles
+        f"https://www.avito.ru/web/6/profiles/{SELLER_NUMERIC_ID}/reviews?page=1&limit=20",
+        f"https://www.avito.ru/web/6/profiles/{SELLER_HASH}/reviews?page=1&limit=20",
+        # mobile API
+        f"https://m.avito.ru/api/18/user/{SELLER_NUMERIC_ID}/reviews?page=1&limit=20",
+        f"https://m.avito.ru/api/22/user/{SELLER_NUMERIC_ID}/reviews?page=1&limit=20",
     ]
 
     headers = {
@@ -358,6 +365,163 @@ def extract_field(obj, field_names):
 
 
 # ═══════════════════════════════════════════════════════════
+# Подход 2: HTML-парсинг страницы Avito
+# ═══════════════════════════════════════════════════════════
+
+def try_html_scrape():
+    """
+    Загрузить HTML страницы Avito и извлечь отзывы из SSR-контента.
+    На российском IP Avito может отдать HTML с данными без капчи.
+    """
+    print("\n[ПОДХОД 2] HTML-парсинг страницы Avito")
+
+    urls_to_try = [
+        AVITO_PAGE_URL,
+        f"https://www.avito.ru/user/{SELLER_HASH}/reviews",
+        f"https://www.avito.ru/brands/i{SELLER_NUMERIC_ID}/all/otzyvy",
+    ]
+
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ru-RU,ru;q=0.9",
+        "Accept-Encoding": "identity",
+        "Cache-Control": "no-cache",
+    }
+
+    ctx = ssl.create_default_context()
+
+    for url in urls_to_try:
+        print(f"  [*] Загружаем: {url[:80]}...")
+        try:
+            time.sleep(random.uniform(2, 4))
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=20, context=ctx) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+
+            # Проверяем, не капча ли это
+            if "captcha" in html.lower() or "проблема с IP" in html:
+                print(f"  [!] Капча/блокировка IP")
+                continue
+
+            print(f"  [*] Получено {len(html)} символов HTML")
+
+            # Подход A: Ищем JSON в __NEXT_DATA__ или window.__initialData__
+            reviews = extract_reviews_from_ssr_json(html)
+            if reviews:
+                print(f"  [OK] Найдено {len(reviews)} отзывов в SSR JSON")
+                return reviews
+
+            # Подход B: Парсим HTML напрямую (regex)
+            reviews = extract_reviews_from_html(html)
+            if reviews:
+                print(f"  [OK] Найдено {len(reviews)} отзывов в HTML")
+                return reviews
+
+            # Дебаг: показываем фрагменты HTML с "отзыв" или "review"
+            for pattern in ["отзыв", "review", "rating", "feedback"]:
+                idx = html.lower().find(pattern)
+                if idx >= 0:
+                    snippet = html[max(0, idx-100):idx+200].replace("\n", " ")
+                    print(f"  [DEBUG] Найдено '{pattern}' в HTML: ...{snippet[:200]}...")
+
+        except urllib.error.HTTPError as e:
+            print(f"  [!] HTTP {e.code}: {e.reason}")
+        except Exception as e:
+            print(f"  [!] Ошибка: {e}")
+
+    print("  [FAIL] HTML-парсинг не удался")
+    return []
+
+
+def extract_reviews_from_ssr_json(html):
+    """Извлечь отзывы из JSON, встроенного в HTML (SSR/Next.js)."""
+    reviews = []
+
+    # Ищем JSON в script-тегах
+    patterns = [
+        r'<script[^>]*id="__NEXT_DATA__"[^>]*>(.*?)</script>',
+        r'window\.__initialData__\s*=\s*(\{.*?\});?\s*</script>',
+        r'window\.__PRELOADED_STATE__\s*=\s*(\{.*?\});?\s*</script>',
+        r'"reviews?":\s*(\[.*?\])',
+        r'"ratings?":\s*(\[.*?\])',
+        r'"feedbacks?":\s*(\[.*?\])',
+    ]
+
+    for pattern in patterns:
+        matches = re.findall(pattern, html, re.DOTALL)
+        for match in matches:
+            try:
+                data = json.loads(match)
+                found = find_review_list(data)
+                if found:
+                    parsed = parse_api_response({"items": found})
+                    if parsed:
+                        return parsed
+            except (json.JSONDecodeError, TypeError):
+                continue
+
+    return reviews
+
+
+def extract_reviews_from_html(html):
+    """Извлечь отзывы из HTML-разметки (regex-подход)."""
+    reviews = []
+
+    # Ищем типичные паттерны Avito: блоки с рейтингом + текстом + датой + именем
+    # Avito использует data-marker атрибуты
+    review_blocks = re.findall(
+        r'data-marker="review[^"]*"[^>]*>(.*?)</(?:div|article|section)',
+        html, re.DOTALL | re.IGNORECASE
+    )
+
+    if not review_blocks:
+        # Пробуем другие паттерны
+        review_blocks = re.findall(
+            r'class="[^"]*[Rr]eview[^"]*"[^>]*>(.*?)</(?:div|article)',
+            html, re.DOTALL
+        )
+
+    for block in review_blocks[:20]:
+        # Извлекаем текст (убираем HTML-теги)
+        text = re.sub(r'<[^>]+>', ' ', block)
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        if len(text) < 10:
+            continue
+
+        # Пробуем извлечь имя, дату
+        name_match = re.search(r'([А-Яа-яA-Za-z]+(?:\s+[А-Яа-яA-Za-z]+)?)', text)
+        date_match = re.search(
+            r'(\d{1,2}\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря))',
+            text.lower()
+        )
+
+        name = name_match.group(1) if name_match else "Клиент"
+        date = date_match.group(1) if date_match else ""
+
+        # Убираем имя и дату из текста отзыва
+        review_text = text
+        if name and len(name) < 30:
+            review_text = review_text.replace(name, "", 1).strip()
+        if date:
+            review_text = re.sub(re.escape(date), "", review_text, count=1).strip()
+
+        if len(review_text) < 5:
+            continue
+
+        reviews.append({
+            "name": name[:30] if name else "Клиент",
+            "rating": 5,
+            "text": review_text[:500],
+            "date": clean_date(date),
+            "source": "Avito"
+        })
+
+    return reviews
+
+
+# ═══════════════════════════════════════════════════════════
 # Main
 # ═══════════════════════════════════════════════════════════
 
@@ -372,13 +536,17 @@ def main():
     current_reviews = load_current_reviews()
     print(f"[*] Текущих отзывов: {len(current_reviews)}")
 
-    # Подход: Avito API (без браузера)
+    # Подход 1: Avito API
     new_reviews = try_avito_api()
+
+    # Подход 2: HTML-парсинг (если API не дал результатов)
+    if not new_reviews:
+        new_reviews = try_html_scrape()
 
     # Если ничего не нашли — не трогаем файл
     if not new_reviews:
         print("\n" + "=" * 60)
-        print("[!] Отзывы не найдены.")
+        print("[!] Отзывы не найдены ни одним способом.")
         print("[!] Текущий reviews.json НЕ изменён.")
         print("=" * 60)
         sys.exit(0)
