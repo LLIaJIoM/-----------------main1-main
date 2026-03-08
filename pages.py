@@ -216,7 +216,7 @@ def render_page(title, description, content, active_path="/", canonical=None, ke
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/css/intlTelInput.css">
-  <link rel="stylesheet" href="/assets/styles.css?v=7">
+  <link rel="stylesheet" href="/assets/styles.css?v=8">
   <link rel="stylesheet" href="/assets/emergency.css">
   <script type="text/javascript">
      (function(m,e,t,r,i,k,a){{
